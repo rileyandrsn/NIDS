@@ -10,10 +10,9 @@ all: $(TARGET) # Default target to build executable
 $(TARGET): main.o  # Link object files into the executable
 	$(CC) $(CFLAGS) -o $(TARGET) main.o
 
-# Rule to compile main.c into an object file
-main.o: main.c     # Compile main.c into main.o
+main.o: main.c     #  main.c -> main.o
 	$(CC) $(CFLAGS) -c main.c
 
-# Rule to clean the build (remove generated files)
-clean: # Clean up build artifacts
+# Rule to clean build
+clean: # Clean up build
 	rm -f *.o $(TARGET)
