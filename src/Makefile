@@ -1,6 +1,6 @@
 # Compiler & Flags
 CC = gcc # Use gcc compiler
-CFLAGS = -Wall -g # Enable all warnings and include debug info
+CFLAGS = -Wall -g -libpcap # Enable all warnings and include debug info
 
 TARGET = main # Variable - name of final executable
 
