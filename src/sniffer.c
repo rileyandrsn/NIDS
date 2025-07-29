@@ -62,7 +62,9 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *p
 }
 
 int packetSniffer(void)
-
+/* <! - Validates a network interface device (NIC) 
+      - Opens a live packet capture session on respective NIC 
+      - Continuously processes incoming packets until stop or an error occurs. - !>*/
 {
     char error_buffer[PACKET_BUFFER_SIZE]; // Size defined as 256
     char *device = "en0"; // Default device name <! - TEMPORARY - !>
