@@ -25,3 +25,7 @@ Function Definition: pcap_open_live(const char *device, int snaplen, int promisc
                     (0) - Disables Promiscuous Mode: Allows only traffic addressed to a device to be captured
     -int to_ms: Read timeout (in milliseconds (ms))
     -char *errbuf: Buffer to hold error messages (at least PCAP_ERRBUF_SIZE)
+
+
+Function Definition: pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+    -pcap_t *p:
