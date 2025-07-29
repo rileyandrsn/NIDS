@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define PACKBUFSIZE 65536
+
+void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *packet){
+    printf("Packet: Length: %d bytes\n",hdr->len);
+}
+
 int packetSniffer(void){
     char errbuff[PCAP_ERRBUF_SIZE]; // Size defined as 256
     char *device = "en0"; // Default device name
@@ -36,6 +42,7 @@ int packetSniffer(void){
         exit(EXIT_FAILURE);
     }
     
+    // isDev: initialized to 0 - set to 1 if device corresponding to users argument following "-i" is valid
     int isDev = 0;
     pcap_if_t *temp_ptr = alldevs_ptr;
     while(temp_ptr != NULL){
@@ -47,6 +54,7 @@ int packetSniffer(void){
         temp_ptr = temp_ptr->next;
     }
     
+    // If device is NOT found, display list of available devices for user to add as an argument following "-i"
     if(!isDev){
         printf("Device %s not found. Available devices:\n", device);
         temp_ptr = alldevs_ptr;
@@ -57,9 +65,31 @@ int packetSniffer(void){
             printf("\n");
             temp_ptr = temp_ptr->next;
         }
+        pcap_freealldevs(alldevs_ptr);
+        return -1;
     }
 
+    //FuncDef: pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *errbuf)
+    pcap_t *p;
+    p = pcap_open_live(device, PACKBUFSIZE, 1, 1000, errbuff);
+    if(p == NULL){
+        printf("Error opening device %s: %s\n", device, errbuff);
+        pcap_freealldevs(alldevs_ptr);
+        return -1;
+    }
+    
+    printf("Starting packet capture on device %s...\n", device);
+    printf("Press Ctrl+C to stop\n");
+    
+    int p_loop = pcap_loop(p, -1, packet_handler, NULL);
+    if(p_loop == -1){
+        printf("Error in pcap_loop: %s\n", pcap_geterr(p));
+    }
+
+    /*! - - - - - - - - - -  FREE - - - - - - - - - - !*/
+    pcap_close(p);
     pcap_freealldevs(alldevs_ptr); // Free alldevs_ptr - pointer pointing toward head of linked list storing alldevs
     
     return 0;
 }
+
