@@ -15,10 +15,16 @@ int packetParser(const struct pcap_pkthdr *hdr, const u_char *packet)
 @param const u_char *packet:
 */
 {
+printf("<! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !>\n");
+    for (int i = 0; i < hdr->caplen; i++) {
+        printf("%02x ", packet[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    
 printf("<! - - - ETHERNET HEADER - - - !>\n");
 printf("Destination MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
     packet[0],packet[1],packet[2],packet[3],packet[4],packet[5]);
-printf("Source MAC: %02x:%02x:%02x:%02x:%02x:%02x",
+printf("Source MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
     packet[6],packet[7],packet[8],packet[9],packet[10],packet[11]);
 
     uint16_t eth_type = (packet[12] << 8) | packet[13];
@@ -65,12 +71,13 @@ printf("Source MAC: %02x:%02x:%02x:%02x:%02x:%02x",
             uint8_t tcp_flags = packet[transport_start + 13];
             printf("TCP Flags: ");
             if(tcp_flags & 0x01) printf("FIN ");
-            if(tcp_flags & 0x01) printf("SYN ");
-            if(tcp_flags & 0x01) printf("RST ");
-            if(tcp_flags & 0x01) printf("PSH ");
-            if(tcp_flags & 0x01) printf("ACK ");
-            if(tcp_flags & 0x01) printf("URG ");
+            if(tcp_flags & 0x02) printf("SYN ");
+            if(tcp_flags & 0x04) printf("RST ");
+            if(tcp_flags & 0x08) printf("PSH ");
+            if(tcp_flags & 0x10) printf("ACK ");
+            if(tcp_flags & 0x020) printf("URG ");
             printf("\n");
+            printf("<! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !>\n");
         }
     }
     return 0;
