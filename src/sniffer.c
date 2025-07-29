@@ -2,6 +2,7 @@
 #include <pcap.h>
 #include <stdlib.h>
 #include <string.h>
+#include "parser.h"
 
 #define PACKET_BUFFER_SIZE 65536 // Maximum packet buffer size in bytes 
 
@@ -58,7 +59,8 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *p
 @param *packet : Packet bytes
 */
 {
-    printf("Packet:%p |  Length: %d bytes\n", packet,hdr->len);
+    printf("This is a packet: Packet:%p |  Length: %d bytes\n", packet,hdr->len);
+    packetParser(hdr, packet);
 }
 
 int packetSniffer(void)

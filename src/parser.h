@@ -2,8 +2,7 @@
 #define PARSER_H
 
 #include <pcap.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
+int packetParser(const struct pcap_pkthdr *hdr, const u_char *packet);
 
 #endif // PARSER_H
