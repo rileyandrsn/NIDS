@@ -7,7 +7,13 @@
 
 int is_valid_dev(char *device,char *error_buffer)
 /* <! - Checks if the device user indicates with "-i" flag is a valid network interface controller - !>*/
+/*
+@param *device : Derefrenced pointer - name of device user specified
+@param error_buffer : Error buffer (256)
+@return int: is_dev
+*/
 {
+
 pcap_if_t *all_devices_ptr; // Initialize pcap_if_t pointer "all_devices_ptr" pointing toward head node of all devices
 int pcap_result = pcap_findalldevs(&all_devices_ptr, error_buffer); // Returns -1 on error, 0 otherwise
 if(pcap_result == 0){
@@ -27,8 +33,6 @@ while(temp_ptr != NULL){
     }
     temp_ptr = temp_ptr->next; // Iterate to next node in linked list of all devices
 }
-    
-
 
 if(!is_dev){ // IF: device is NOT found, display list of available devices for user to add as an argument
     printf("Device %s not found. Available devices:\n", device);
@@ -38,15 +42,21 @@ if(!is_dev){ // IF: device is NOT found, display list of available devices for u
         temp_ptr = temp_ptr->next;
     }
     pcap_freealldevs(all_devices_ptr);
-    return -1;
+    return is_dev;
 }    
 // Free all_devices_ptr before returning
 pcap_freealldevs(all_devices_ptr);
 return is_dev;
+
 }
 
 void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *packet)
-/* <! - Displays packet address and size in bytes - !>*/
+/* <! - Displays packet address and size in bytes - !> */
+/*
+@param args : User data
+@param *hdr : Packet header
+@param *packet : Packet bytes
+*/
 {
     printf("Packet:%p |  Length: %d bytes\n", packet,hdr->len);
 }
@@ -55,14 +65,14 @@ int packetSniffer(void)
 
 {
     char error_buffer[PACKET_BUFFER_SIZE]; // Size defined as 256
-    char *device = "e0"; // Default device name <! - TEMPORARY - !>
+    char *device = "en0"; // Default device name <! - TEMPORARY - !>
 
     int is_dev = is_valid_dev(device, error_buffer);
-    if(is_dev == -1){
+    if(is_dev == 0){
         return -1; // NOT a valid device
     }
 
-    pcap_t *capture_handle;
+    pcap_t *capture_handle; // Packet capture handle
     capture_handle = pcap_open_live(device, PACKET_BUFFER_SIZE, 1, 1000, error_buffer);
     if(capture_handle == NULL){
         printf("Error opening device %s: %s\n", device, error_buffer);
@@ -78,5 +88,3 @@ int packetSniffer(void)
 
     return 0;
 }
-
-
