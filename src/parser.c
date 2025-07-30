@@ -102,11 +102,24 @@ typedef struct {
     uint8_t spa[4];
     uint8_t tha[6];
     uint8_t tpa[4];
-} __attribute__((packed)) arp_header; // Ensures structure is packed tightly (no compiler-inserted padding)\
+} __attribute__((packed)) arp_header; // Ensures structure is packed tightly (no compiler-inserted padding)
+
+typedef struct {
+    eth_header eth_hdr;
+} packet_t;
 
 
-int packetParser(const struct pcap_pkthdr *hdr, const u_char *packet)
+int packetParser(const u_char *packet)
+/*
+@param const u_char *packet : pointer to packet data - raw bytes of captured packet
+*/
 {
+    packet_t pkt;
+
+    memcpy(pkt.eth_hdr.dst_mac,packet,6);
+    memcpy(pkt.eth_hdr.dst_mac,packet+6,6);
+    pkt.eth_hdr.eth_type = ntohs(uint16_t *)(packet + 12);
+
     void *payload;
     int payload_len;
 
