@@ -26,6 +26,20 @@ typedef struct {
 } ipv4_header;
 
 typedef struct {
+    uint32_t ver_tc_fl; // Version (4 bits), Traffic Class (8 bits), Flow Label (20 bits)
+    uint16_t payload_len;
+    uint8_t next_hdr;
+    uint8_t hop_limit;
+    struct in6_addr src_addr;
+    struct in6_addr dst_addr;
+} ipv6_header;
+
+typedef union {
+    ipv4_header ipv4_hdr;
+    ipv6_header ipv6_hdr;
+} ip_header_union;
+
+typedef struct {
     uint16_t src_port;
     uint16_t dst_port;
     uint32_t sequence_num;
@@ -36,15 +50,6 @@ typedef struct {
     uint16_t checksum;
     uint16_t urgent_pointer;
 } tcp_header;
-
-typedef struct {
-    uint32_t ver_tc_fl; // Version (4 bits), Traffic Class (8 bits), Flow Label (20 bits)
-    uint16_t payload_len;
-    uint8_t next_hdr;
-    uint8_t hop_limit;
-    struct in6_addr src_addr;
-    struct in6_addr dst_addr;
-} ipv6_header;
 
 typedef struct { // IPv6 next_hdr = 0
     uint8_t next_hdr;
@@ -106,6 +111,7 @@ typedef struct {
 
 typedef struct {
     eth_header eth_hdr;
+    ip_header_union ip_hdr;
 } packet_t;
 
 
@@ -114,16 +120,40 @@ int packetParser(const u_char *packet)
 @param const u_char *packet : pointer to packet data - raw bytes of captured packet
 */
 {
+    // TODO: Parsing logic
     packet_t pkt;
+    int internet_layer_start = 14;
 
     memcpy(pkt.eth_hdr.dst_mac,packet,6);
     memcpy(pkt.eth_hdr.src_mac,packet+6,6);
     pkt.eth_hdr.eth_type = ntohs(*(uint16_t *)(packet + 12));
+    printf("%hu",pkt.eth_hdr.eth_type);
 
+    if(pkt.eth_hdr.eth_type == 2048){ // hex: 0x0800 (IPv4)
+        memcpy(&pkt.ip_hdr.ipv4_hdr.version_ihl,packet+internet_layer_start,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.service,packet+internet_layer_start+1,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.total_len,packet+internet_layer_start+1,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.identification,packet+internet_layer_start+2,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.flags_frag_offset,packet+internet_layer_start+2,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.ttl,packet+internet_layer_start+2,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.protocol,packet+internet_layer_start+1,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.hdr_checksum,packet+internet_layer_start+1,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.src_ip,packet+internet_layer_start+2,4);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.dst_ip,packet+internet_layer_start+4,4);
+
+    } else if(pkt.eth_hdr.eth_type == 34525){ // hex: 0x86DD (IPv6)
+        memcpy(&pkt.ip_hdr.ipv6_hdr.ver_tc_fl,packet+internet_layer_start,4);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.payload_len,packet+internet_layer_start+4,2);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.next_hdr,packet+internet_layer_start+2,1);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.hop_limit,packet+internet_layer_start+1,1);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.hop_limit,packet+internet_layer_start+1,1);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.src_addr,packet+internet_layer_start+1,16);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.dst_addr,packet+internet_layer_start+16,16);
+    }
     //void *payload;
     //int payload_len;
 
-    // TODO: Parsing logic
+
 
     return 0;
 }
