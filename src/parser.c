@@ -117,11 +117,11 @@ int packetParser(const u_char *packet)
     packet_t pkt;
 
     memcpy(pkt.eth_hdr.dst_mac,packet,6);
-    memcpy(pkt.eth_hdr.dst_mac,packet+6,6);
-    pkt.eth_hdr.eth_type = ntohs(uint16_t *)(packet + 12);
+    memcpy(pkt.eth_hdr.src_mac,packet+6,6);
+    pkt.eth_hdr.eth_type = ntohs(*(uint16_t *)(packet + 12));
 
-    void *payload;
-    int payload_len;
+    //void *payload;
+    //int payload_len;
 
     // TODO: Parsing logic
 
