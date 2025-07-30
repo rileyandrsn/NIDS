@@ -153,7 +153,7 @@ int packetParser(const u_char *packet)
     //void *payload;
     //int payload_len;
 
-
+    //july-30-2025 1:43AM : Print statemented all fields, went bad for ipv4 after either version/ihl, or service; went bad for ipv6 after payload len
 
     return 0;
 }
