@@ -40,6 +40,8 @@ typedef struct {
     uint8_t hardware_len;
     uint8_t protocol_len;
     uint16_t operation;
+    uint32_t spa; // sender protocol addre (IPv4 addr)
+    uint32_t tpa; // target protocol addr (IPv4 addr)
 } __attribute__((packed)) arp_header; // Ensures structure is packed tightly (no compiler-inserted padding)
 
 typedef union {
@@ -203,12 +205,26 @@ int packetParser(const u_char *packet)
         printf("Destination IPv6: %s\n", dst_ipv6);
     } else if(pkt.eth_hdr.eth_type == 2054){ // hex: 0x0806 (ARP)
         memcpy(&pkt.ip_hdr.arp_hdr.hardware_type,packet + internet_layer_start,2);
+        printf("\n ARP HARDWARE TYPE: %x \n",ntohs(pkt.ip_hdr.arp_hdr.hardware_type));
         memcpy(&pkt.ip_hdr.arp_hdr.protocol_type,packet + internet_layer_start+2,2);
+        printf("\n ARP PROTOCOL TYPE: %x \n",pkt.ip_hdr.arp_hdr.protocol_type);
         memcpy(&pkt.ip_hdr.arp_hdr.hardware_len,packet + internet_layer_start+4,1);
+        printf("\n ARP HARDWARE LENGTH: %x \n",pkt.ip_hdr.arp_hdr.hardware_len);
         memcpy(&pkt.ip_hdr.arp_hdr.protocol_len,packet + internet_layer_start+5,1);
+        printf("\n ARP PROTOCOL LENGTH: %x \n",pkt.ip_hdr.arp_hdr.protocol_len);
         memcpy(&pkt.ip_hdr.arp_hdr.operation,packet + internet_layer_start+6,2);
-        memcpy(&pkt.ip_hdr.arp_hdr.hardware_type,packet + internet_layer_start+8,2);
+        printf("\n ARP OPCODE: %x \n",ntohs(pkt.ip_hdr.arp_hdr.operation));
+        memcpy(&pkt.ip_hdr.arp_hdr.spa,packet + internet_layer_start + 14, 4);
+        memcpy(&pkt.ip_hdr.arp_hdr.tpa,packet + internet_layer_start + 24, 4);
+
+        // Convert IP addresses to readable format
+        struct in_addr src_addr, dst_addr;
+        src_addr.s_addr = pkt.ip_hdr.arp_hdr.spa;
+        dst_addr.s_addr = pkt.ip_hdr.arp_hdr.tpa;
+        printf("\n ARP SENDER IP: %s\n", inet_ntoa(src_addr));
+        printf("\n ARP TARGET IP: %s\n", inet_ntoa(dst_addr));
     } 
+
     //void *payload;
     //int payload_len;
 
