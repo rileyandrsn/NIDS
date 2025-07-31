@@ -119,8 +119,19 @@ int packetParser(const u_char *packet)
 @param const u_char *packet : pointer to packet data - raw bytes of captured packet
 */
 {
-    // TODO: Parsing logic
+/* TODO: Parsing logic
+     -ethernet header (done)
+     -ipv4 header (done)
+     -ipv6 header (done)
 
+     -tcp header
+     -udp header
+     -icmp header
+     -dns header
+     -ipv6 hop-by-hop ext
+     -ipv6 routing ext
+     -ipv6 fragment ext
+*/
     // Print entire raw hex of packet
     printf("Raw packet hex dump:\n");
     for (int i = 0; i < 64; i++) { // Print first 64 bytes, adjust as needed
@@ -152,7 +163,6 @@ int packetParser(const u_char *packet)
     if(pkt.eth_hdr.eth_type == 2048){ // hex: 0x0800 (IPv4)
         printf("=== IPv4 Header ===\n");
         
-
         memcpy(&pkt.ip_hdr.ipv4_hdr.version_ihl,packet+internet_layer_start,1);
         memcpy(&pkt.ip_hdr.ipv4_hdr.service,packet+internet_layer_start+1,1);
         memcpy(&pkt.ip_hdr.ipv4_hdr.total_len,packet+internet_layer_start+2,2);
