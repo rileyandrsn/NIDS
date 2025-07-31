@@ -59,7 +59,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *p
 @param *packet : Packet bytes
 */
 {
-    printf("This is a packet: Packet:%p |  Length: %d bytes\n", packet,hdr->len);
+    printf("\n\nThis is a packet: Packet:%p |  Length: %d bytes\n", packet,hdr->len);
     packetParser(packet, hdr->len);
 }
 

@@ -62,27 +62,6 @@ typedef struct {
     uint16_t urgent_pointer;
 } tcp_header;
 
-typedef struct { // IPv6 next_hdr = 0
-    uint8_t next_hdr;
-    uint8_t hdr_ext_len;
-    uint8_t options[];
-} ipv6_ext_hop;
-
-typedef struct { // IPv6 next_hdr = 43
-    uint8_t next_hdr;
-    uint8_t hdr_ext_len;
-    uint8_t routing_type;
-    uint8_t segments_left;
-    uint8_t data[];
-} ipv6_ext_routing;
-
-typedef struct { // IPv6 next_hdr = 44
-    uint8_t next_hdr;
-    uint8_t reserved;
-    uint16_t fragoff_res2_m; // Fragment offset (13 bits), Reserved (2 bits), M Flag (1 bit)
-    uint32_t identification; 
-} ipv6_ext_frag;
-
 typedef struct {
     uint16_t src_port;
     uint16_t dst_port;
@@ -90,6 +69,11 @@ typedef struct {
     uint16_t checksum;
     uint8_t data[];
 } udp_header;
+
+typedef union{
+    tcp_header tcp_hdr;
+    udp_header udp_hdr;
+} protocol_union;
 
 typedef struct {
     uint16_t transaction_id;
@@ -111,6 +95,7 @@ typedef struct {
 typedef struct {
     eth_header eth_hdr;
     ip_header_union ip_hdr;
+    protocol_union proto;
 } packet_t;
 
 
@@ -124,17 +109,14 @@ int packetParser(const u_char *packet)
      -ipv4 header (done)
      -ipv6 header (done)
 
-     -tcp header
-     -udp header
-     -icmp header
-     -dns header
-     -ipv6 hop-by-hop ext
-     -ipv6 routing ext
-     -ipv6 fragment ext
+     -tcp header (next header = 6)
+     -udp header (next header = 17)
+     -icmpv6 header (next header = 58)
+     -dns header (tcp/udp port 53)
 */
     // Print entire raw hex of packet
     printf("Raw packet hex dump:\n");
-    for (int i = 0; i < 64; i++) { // Print first 64 bytes, adjust as needed
+    for (int i = 0; i < 66; i++) { // Print first 66 bytes to check
         printf("%02x ", packet[i]);
         if ((i + 1) % 16 == 0) {
             printf("\n");
@@ -145,6 +127,7 @@ int packetParser(const u_char *packet)
     packet_t pkt;
 
     int internet_layer_start = 14;
+    int transport_layer_start;
 
     memcpy(pkt.eth_hdr.dst_mac,packet,6);
     memcpy(pkt.eth_hdr.src_mac,packet+6,6);
@@ -234,6 +217,49 @@ int packetParser(const u_char *packet)
         printf("\n ARP SENDER IP: %s\n", inet_ntoa(src_addr));
         printf("\n ARP TARGET IP: %s\n", inet_ntoa(dst_addr));
     } 
+
+    if(pkt.ip_hdr.ipv4_hdr.protocol == 6){
+        printf("\n < ! - - - - - TCP HEADER IPv4 - - - - - ! >\n");
+        uint8_t ihl = pkt.ip_hdr.ipv4_hdr.version_ihl & 0x0f; //bit mask rightmost 4 bits for IHL
+        printf("IHL: %x\n",ihl);
+        transport_layer_start = (ihl * 32)/8;
+        printf(" Trans layer start: %d\n",transport_layer_start);
+        memcpy(&pkt.proto.tcp_hdr.src_port,packet + internet_layer_start + transport_layer_start, 2);
+        printf("SRC PORT: %u\n",ntohs(pkt.proto.tcp_hdr.src_port));
+        memcpy(&pkt.proto.tcp_hdr.dst_port,packet + internet_layer_start + transport_layer_start + 2, 2);
+        printf("DST PORT: %u\n",ntohs(pkt.proto.tcp_hdr.dst_port));
+        memcpy(&pkt.proto.tcp_hdr.sequence_num,packet + internet_layer_start + transport_layer_start + 4, 4);
+        printf("Sequence Number (raw): %x\n",ntohl(pkt.proto.tcp_hdr.sequence_num));
+        memcpy(&pkt.proto.tcp_hdr.ack_num,packet + internet_layer_start + transport_layer_start + 8, 4); // issue: ntohs only goes up to 16 bits, needed to change to ntohl (32 bits) [fixed]
+        printf("ACK NUM: %x\n",ntohl(pkt.proto.tcp_hdr.ack_num));
+        memcpy(&pkt.proto.tcp_hdr.data_offset_reserved,packet + internet_layer_start + transport_layer_start + 12, 1);
+        printf("Data offset + reserved: %x\n",ntohs(pkt.proto.tcp_hdr.data_offset_reserved));
+        memcpy(&pkt.proto.tcp_hdr.flags,packet + internet_layer_start + transport_layer_start + 13, 1);
+        printf("Flags: %x\n",pkt.proto.tcp_hdr.flags);
+        if((pkt.proto.tcp_hdr.flags & 0x01) == 0x01)printf("-FIN\n");
+        if((pkt.proto.tcp_hdr.flags & 0x02) == 0x02)printf("-SYN\n");
+        if((pkt.proto.tcp_hdr.flags & 0x04) == 0x04)printf("-RESET\n");
+        if((pkt.proto.tcp_hdr.flags & 0x08) == 0x08)printf("-PUSH\n");\
+        if((pkt.proto.tcp_hdr.flags & 0x10) == 0x10)printf("-ACK\n");
+        if((pkt.proto.tcp_hdr.flags & 0x20) == 0x20)printf("-URGENT\n");
+        if((pkt.proto.tcp_hdr.flags & 0x40) == 0x40)printf("-ECE\n");
+        if((pkt.proto.tcp_hdr.flags & 0x80) == 0x80)printf("-CWR\n");
+        memcpy(&pkt.proto.tcp_hdr.window_size,packet + internet_layer_start + transport_layer_start + 14, 2);
+        printf("\nWindow Size: %u\n",ntohs(pkt.proto.tcp_hdr.window_size));
+        memcpy(&pkt.proto.tcp_hdr.checksum,packet + internet_layer_start + transport_layer_start + 16, 2);
+        printf("\n Checksum: %x \n",ntohs(pkt.proto.tcp_hdr.checksum));
+        memcpy(&pkt.proto.tcp_hdr.urgent_pointer,packet + internet_layer_start + transport_layer_start + 18, 2);
+        printf("\n Urgent Pointer: %x \n",ntohs(pkt.proto.tcp_hdr.urgent_pointer));
+
+    } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 6){
+        printf("\n < ! - - - - - TCP HEADER IPv6 - - - - - ! >\n");
+    } else if(pkt.ip_hdr.ipv4_hdr.protocol == 17){
+        printf("\n < ! - - - - - UDP HEADER IPv4 - - - - - ! >\n");
+    } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 17){
+        printf("\n < ! - - - - - UDP HEADER IPv6 - - - - - ! >\n");
+    } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 58){
+        printf("\n < ! - - - - - ICMPv6 HEADER - - - - - ! >\n");
+    }
 
     //void *payload;
     //int payload_len;
