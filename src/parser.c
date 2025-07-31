@@ -121,39 +121,103 @@ int packetParser(const u_char *packet)
 */
 {
     // TODO: Parsing logic
+
+    // Print entire raw hex of packet
+    printf("Raw packet hex dump:\n");
+    for (int i = 0; i < 64; i++) { // Print first 64 bytes, adjust as needed
+        printf("%02x ", packet[i]);
+        if ((i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    printf("\n");
+    
     packet_t pkt;
+
     int internet_layer_start = 14;
 
     memcpy(pkt.eth_hdr.dst_mac,packet,6);
     memcpy(pkt.eth_hdr.src_mac,packet+6,6);
     pkt.eth_hdr.eth_type = ntohs(*(uint16_t *)(packet + 12));
-    printf("%hu",pkt.eth_hdr.eth_type);
+    
+    // Print Ethernet header fields
+    printf("=== Ethernet Header ===\n");
+    printf("Destination MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+           pkt.eth_hdr.dst_mac[0], pkt.eth_hdr.dst_mac[1], pkt.eth_hdr.dst_mac[2],
+           pkt.eth_hdr.dst_mac[3], pkt.eth_hdr.dst_mac[4], pkt.eth_hdr.dst_mac[5]);
+    printf("Source MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", 
+           pkt.eth_hdr.src_mac[0], pkt.eth_hdr.src_mac[1], pkt.eth_hdr.src_mac[2],
+           pkt.eth_hdr.src_mac[3], pkt.eth_hdr.src_mac[4], pkt.eth_hdr.src_mac[5]);
+    printf("Ethernet Type: 0x%04x (%u)\n", pkt.eth_hdr.eth_type, pkt.eth_hdr.eth_type);
 
     if(pkt.eth_hdr.eth_type == 2048){ // hex: 0x0800 (IPv4)
+        printf("=== IPv4 Header ===\n");
+        
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.version_ihl,packet+internet_layer_start,1);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.service,packet+internet_layer_start+1,1);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.total_len,packet+internet_layer_start+1,2);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.identification,packet+internet_layer_start+2,2);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.flags_frag_offset,packet+internet_layer_start+2,2);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.ttl,packet+internet_layer_start+2,1);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.protocol,packet+internet_layer_start+1,1);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.hdr_checksum,packet+internet_layer_start+1,2);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.src_ip,packet+internet_layer_start+2,4);
+        // memcpy(&pkt.ip_hdr.ipv4_hdr.dst_ip,packet+internet_layer_start+4,4);
+
         memcpy(&pkt.ip_hdr.ipv4_hdr.version_ihl,packet+internet_layer_start,1);
         memcpy(&pkt.ip_hdr.ipv4_hdr.service,packet+internet_layer_start+1,1);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.total_len,packet+internet_layer_start+1,2);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.identification,packet+internet_layer_start+2,2);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.flags_frag_offset,packet+internet_layer_start+2,2);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.ttl,packet+internet_layer_start+2,1);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.protocol,packet+internet_layer_start+1,1);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.hdr_checksum,packet+internet_layer_start+1,2);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.src_ip,packet+internet_layer_start+2,4);
-        memcpy(&pkt.ip_hdr.ipv4_hdr.dst_ip,packet+internet_layer_start+4,4);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.total_len,packet+internet_layer_start+2,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.identification,packet+internet_layer_start+4,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.flags_frag_offset,packet+internet_layer_start+6,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.ttl,packet+internet_layer_start+8,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.protocol,packet+internet_layer_start+9,1);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.hdr_checksum,packet+internet_layer_start+10,2);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.src_ip,packet+internet_layer_start+12,4);
+        memcpy(&pkt.ip_hdr.ipv4_hdr.dst_ip,packet+internet_layer_start+16,4);
+        
+        // Print IPv4 header fields
+        printf("Version/IHL: 0x%02x\n", pkt.ip_hdr.ipv4_hdr.version_ihl);
+        printf("Service: 0x%02x\n", pkt.ip_hdr.ipv4_hdr.service);
+        printf("Total Length: %u\n", ntohs(pkt.ip_hdr.ipv4_hdr.total_len));
+        printf("Identification: 0x%04x\n", ntohs(pkt.ip_hdr.ipv4_hdr.identification));
+        printf("Flags/Fragment Offset: 0x%04x\n", ntohs(pkt.ip_hdr.ipv4_hdr.flags_frag_offset));
+        printf("TTL: %u\n", pkt.ip_hdr.ipv4_hdr.ttl);
+        printf("Protocol: %u\n", pkt.ip_hdr.ipv4_hdr.protocol);
+        printf("Header Checksum: 0x%04x\n", ntohs(pkt.ip_hdr.ipv4_hdr.hdr_checksum));
+        
+        // Convert IP addresses to readable format
+        struct in_addr src_addr, dst_addr;
+        src_addr.s_addr = pkt.ip_hdr.ipv4_hdr.src_ip;
+        dst_addr.s_addr = pkt.ip_hdr.ipv4_hdr.dst_ip;
+        printf("Source IP: %s\n", inet_ntoa(src_addr));
+        printf("Destination IP: %s\n", inet_ntoa(dst_addr));
 
     } else if(pkt.eth_hdr.eth_type == 34525){ // hex: 0x86DD (IPv6)
+        printf("=== IPv6 Header ===\n");
+        
         memcpy(&pkt.ip_hdr.ipv6_hdr.ver_tc_fl,packet+internet_layer_start,4);
         memcpy(&pkt.ip_hdr.ipv6_hdr.payload_len,packet+internet_layer_start+4,2);
-        memcpy(&pkt.ip_hdr.ipv6_hdr.next_hdr,packet+internet_layer_start+2,1);
-        memcpy(&pkt.ip_hdr.ipv6_hdr.hop_limit,packet+internet_layer_start+1,1);
-        memcpy(&pkt.ip_hdr.ipv6_hdr.hop_limit,packet+internet_layer_start+1,1);
-        memcpy(&pkt.ip_hdr.ipv6_hdr.src_addr,packet+internet_layer_start+1,16);
-        memcpy(&pkt.ip_hdr.ipv6_hdr.dst_addr,packet+internet_layer_start+16,16);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.next_hdr, packet + internet_layer_start + 6, 1);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.hop_limit, packet + internet_layer_start + 7, 1);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.src_addr, packet + internet_layer_start + 8, 16);
+        memcpy(&pkt.ip_hdr.ipv6_hdr.dst_addr, packet + internet_layer_start + 24, 16);        
+        
+        // Print IPv6 header fields
+        printf("Version/Traffic Class/Flow Label: 0x%08x\n", ntohl(pkt.ip_hdr.ipv6_hdr.ver_tc_fl));
+        printf("Payload Length: %u\n", ntohs(pkt.ip_hdr.ipv6_hdr.payload_len));
+        printf("Next Header: %u\n", pkt.ip_hdr.ipv6_hdr.next_hdr);
+        printf("Hop Limit: %u\n", pkt.ip_hdr.ipv6_hdr.hop_limit);
+        
+        // Convert IPv6 addresses to readable format
+        char src_ipv6[INET6_ADDRSTRLEN], dst_ipv6[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &pkt.ip_hdr.ipv6_hdr.src_addr, src_ipv6, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &pkt.ip_hdr.ipv6_hdr.dst_addr, dst_ipv6, INET6_ADDRSTRLEN);
+        printf("Source IPv6: %s\n", src_ipv6);
+        printf("Destination IPv6: %s\n", dst_ipv6);
     }
+
     //void *payload;
     //int payload_len;
-
-    //july-30-2025 1:43AM : Print statemented all fields, went bad for ipv4 after either version/ihl, or service; went bad for ipv6 after payload len
 
     return 0;
 }

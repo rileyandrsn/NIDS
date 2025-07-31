@@ -60,7 +60,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *p
 */
 {
     printf("This is a packet: Packet:%p |  Length: %d bytes\n", packet,hdr->len);
-    packetParser(packet);
+    packetParser(packet, hdr->len);
 }
 
 int packetSniffer(void)
