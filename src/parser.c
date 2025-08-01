@@ -69,9 +69,16 @@ typedef struct {
     uint16_t checksum;
 } udp_header;
 
+typedef struct {
+    uint8_t type;
+    uint8_t code;
+    uint16_t checksum;
+} icmp_header;
+
 typedef union{
     tcp_header tcp_hdr;
     udp_header udp_hdr;
+    icmp_header icmp_hdr;
 } protocol_union;
 
 typedef struct {
@@ -82,14 +89,6 @@ typedef struct {
     uint16_t num_authority_rr;
     uint16_t num_additional_rr;
 } dns_header;
-
-typedef struct {
-    uint8_t type;
-    uint8_t code;
-    uint16_t checksum;
-    uint32_t rest_of_header;
-    uint8_t data[];
-} icmp_header;
 
 typedef struct {
     eth_header eth_hdr;
@@ -109,7 +108,7 @@ int packetParser(const u_char *packet)
      -ipv6 header (done)
 
      -tcp header (next header = 6) (done)
-     -udp header (next header = 17) 
+     -udp header (next header = 17) (done)
      -icmpv6 header (next header = 58)
      -dns header (tcp/udp port 53)
 */
@@ -295,7 +294,14 @@ int packetParser(const u_char *packet)
         memcpy(&pkt.proto.udp_hdr.checksum, packet + internet_layer_start + transport_layer_start + 6, 2);
         printf("Checksum: %x\n",ntohs(pkt.proto.udp_hdr.checksum));
     } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 58){
-        printf("\n < ! - - - - - ICMPv6 HEADER - - - - - ! >\n");
+        transport_layer_start = 40;
+        printf("\n < ! - - - - - ICMP HEADER - - - - - ! >\n");
+        memcpy(&pkt.proto.icmp_hdr.type,packet+internet_layer_start+transport_layer_start, 1);
+        printf("Type: %u\n",pkt.proto.icmp_hdr.type);
+        memcpy(&pkt.proto.icmp_hdr.code,packet+internet_layer_start+transport_layer_start +1, 1);
+        printf("Code: %u\n",pkt.proto.icmp_hdr.code);
+        memcpy(&pkt.proto.icmp_hdr.checksum,packet+internet_layer_start+transport_layer_start +2, 2);
+        printf("Checksum: %x\n",pkt.proto.icmp_hdr.checksum);
     }
 
     //void *payload;
