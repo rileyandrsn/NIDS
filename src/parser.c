@@ -296,12 +296,13 @@ int packetParser(const u_char *packet)
     } else if(pkt.net_hdr.ipv6_hdr.next_hdr == 58){
         trans_layer_start = 40;
         printf("\n < ! - - - - - ICMP HEADER - - - - - ! >\n");
-        memcpy(&pkt.trans_hdr.icmp_hdr.type,packet+net_layer_start+trans_layer_start, 1);
-        printf("Type: %u\n",pkt.trans_hdr.icmp_hdr.type);
-        memcpy(&pkt.trans_hdr.icmp_hdr.code,packet+net_layer_start+trans_layer_start +1, 1);
-        printf("Code: %u\n",pkt.trans_hdr.icmp_hdr.code);
-        memcpy(&pkt.trans_hdr.icmp_hdr.checksum,packet+net_layer_start+trans_layer_start +2, 2);
-        printf("Checksum: %x\n",ntohs(pkt.trans_hdr.icmp_hdr.checksum));
+        memcpy(&pkt.proto.icmp_hdr.type,packet+internet_layer_start+transport_layer_start, 1);
+        printf("Type: %u\n",pkt.proto.icmp_hdr.type);
+        memcpy(&pkt.proto.icmp_hdr.code,packet+internet_layer_start+transport_layer_start +1, 1);
+        printf("Code: %u\n",pkt.proto.icmp_hdr.code);
+        memcpy(&pkt.proto.icmp_hdr.checksum,packet+internet_layer_start+transport_layer_start +2, 2);
+        printf("Checksum: %x\n",ntohs(pkt.proto.icmp_hdr.checksum));
+
     }
 
     //void *payload;
