@@ -67,7 +67,6 @@ typedef struct {
     uint16_t dst_port;
     uint16_t len;
     uint16_t checksum;
-    uint8_t data[];
 } udp_header;
 
 typedef union{
@@ -109,8 +108,8 @@ int packetParser(const u_char *packet)
      -ipv4 header (done)
      -ipv6 header (done)
 
-     -tcp header (next header = 6)
-     -udp header (next header = 17)
+     -tcp header (next header = 6) (done)
+     -udp header (next header = 17) 
      -icmpv6 header (next header = 58)
      -dns header (tcp/udp port 53)
 */
@@ -280,10 +279,21 @@ int packetParser(const u_char *packet)
         printf("\n Checksum: %x \n",ntohs(pkt.proto.tcp_hdr.checksum));
         memcpy(&pkt.proto.tcp_hdr.urgent_pointer,packet + internet_layer_start + transport_layer_start + 18, 2);
         printf("\n Urgent Pointer: %x \n",ntohs(pkt.proto.tcp_hdr.urgent_pointer));
-    } else if(pkt.ip_hdr.ipv4_hdr.protocol == 17){
-        printf("\n < ! - - - - - UDP HEADER IPv4 - - - - - ! >\n");
-    } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 17){
-        printf("\n < ! - - - - - UDP HEADER IPv6 - - - - - ! >\n");
+    } else if(pkt.ip_hdr.ipv4_hdr.protocol == 17 || pkt.ip_hdr.ipv6_hdr.next_hdr == 17){
+        if (pkt.ip_hdr.ipv4_hdr.protocol == 17) {
+            transport_layer_start = 20;
+        } else {
+            transport_layer_start = 40;
+        }        
+        printf("\n < ! - - - - - UDP HEADER - - - - - ! >\n");
+        memcpy(&pkt.proto.udp_hdr.src_port, packet + internet_layer_start + transport_layer_start, 2);
+        printf("Source Port: %u\n",ntohs(pkt.proto.udp_hdr.src_port));
+        memcpy(&pkt.proto.udp_hdr.dst_port, packet + internet_layer_start + transport_layer_start + 2, 2);
+        printf("Destination Port: %u\n",ntohs(pkt.proto.udp_hdr.dst_port));
+        memcpy(&pkt.proto.udp_hdr.len, packet + internet_layer_start + transport_layer_start + 4, 2);
+        printf("Length: %u\n",ntohs(pkt.proto.udp_hdr.len));
+        memcpy(&pkt.proto.udp_hdr.checksum, packet + internet_layer_start + transport_layer_start + 6, 2);
+        printf("Checksum: %x\n",ntohs(pkt.proto.udp_hdr.checksum));
     } else if(pkt.ip_hdr.ipv6_hdr.next_hdr == 58){
         printf("\n < ! - - - - - ICMPv6 HEADER - - - - - ! >\n");
     }
