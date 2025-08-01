@@ -42,10 +42,11 @@ typedef struct {
   uint8_t hardware_len;
   uint8_t protocol_len;
   uint16_t operation;
-  uint32_t spa;                        // sender protocol addre (IPv4 addr)
-  uint32_t tpa;                        // target protocol addr (IPv4 addr)
-} __attribute__((packed)) arp_header;  // Ensures structure is packed tightly
-                                       // (no compiler-inserted padding)
+  uint8_t sha[6];
+  uint32_t spa;        
+  uint8_t tha[6];                
+  uint32_t tpa;                        
+} __attribute__((packed)) arp_header;  // Ensures structure is packed tightly (no compiler-inserted padding)
 
 typedef union {
   ipv4_header ipv4_hdr;
@@ -223,14 +224,22 @@ packet
     printf("\n ARP PROTOCOL LENGTH: %x \n", pkt.net_hdr.arp_hdr.protocol_len);
     memcpy(&pkt.net_hdr.arp_hdr.operation, packet + net_layer_start + 6, 2);
     printf("\n ARP OPCODE: %x \n", ntohs(pkt.net_hdr.arp_hdr.operation));
+    memcpy(&pkt.net_hdr.arp_hdr.sha, packet + net_layer_start + 8, 6);
     memcpy(&pkt.net_hdr.arp_hdr.spa, packet + net_layer_start + 14, 4);
+    memcpy(&pkt.net_hdr.arp_hdr.tha, packet + net_layer_start + 18, 6);
     memcpy(&pkt.net_hdr.arp_hdr.tpa, packet + net_layer_start + 24, 4);
 
     // Convert IP addresses to readable format
     struct in_addr src_addr, dst_addr;
     src_addr.s_addr = pkt.net_hdr.arp_hdr.spa;
     dst_addr.s_addr = pkt.net_hdr.arp_hdr.tpa;
+    printf("\n ARP SENDER HARDWARE ADDR: %02x:%02x:%02x:%02x:%02x:%02x\n",
+           pkt.net_hdr.arp_hdr.sha[0], pkt.net_hdr.arp_hdr.sha[1], pkt.net_hdr.arp_hdr.sha[2],
+           pkt.net_hdr.arp_hdr.sha[3], pkt.net_hdr.arp_hdr.sha[4], pkt.net_hdr.arp_hdr.sha[5]);
     printf("\n ARP SENDER IP: %s\n", inet_ntoa(src_addr));
+    printf("\n ARP TARGET HARDWARE ADDR: %02x:%02x:%02x:%02x:%02x:%02x\n",
+           pkt.net_hdr.arp_hdr.tha[0], pkt.net_hdr.arp_hdr.tha[1], pkt.net_hdr.arp_hdr.tha[2],
+           pkt.net_hdr.arp_hdr.tha[3], pkt.net_hdr.arp_hdr.tha[4], pkt.net_hdr.arp_hdr.tha[5]);
     printf("\n ARP TARGET IP: %s\n", inet_ntoa(dst_addr));
   }
 
@@ -298,8 +307,7 @@ packet
            ntohl(pkt.trans_hdr.tcp_hdr.sequence_num));
     memcpy(&pkt.trans_hdr.tcp_hdr.ack_num,
            packet + net_layer_start + trans_layer_start + 8,
-           4);  // issue: ntohs only goes up to 16 bits, needed to change to
-                // ntohl (32 bits) [fixed]
+           4);
     printf("ACK NUM: %x\n", ntohl(pkt.trans_hdr.tcp_hdr.ack_num));
     memcpy(&pkt.trans_hdr.tcp_hdr.data_offset_reserved,
            packet + net_layer_start + trans_layer_start + 12, 1);
