@@ -109,8 +109,7 @@ int packetParser(const u_char *packet)
 
      -tcp header (next header = 6) (done)
      -udp header (next header = 17) (done)
-     -icmpv6 header (next header = 58)
-     -dns header (tcp/udp port 53)
+     -icmpv6 header (next header = 58) (done)
 */
     // Print entire raw hex of packet
     printf("Raw packet hex dump:\n");
