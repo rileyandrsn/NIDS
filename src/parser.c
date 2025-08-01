@@ -301,7 +301,7 @@ int packetParser(const u_char *packet)
         memcpy(&pkt.proto.icmp_hdr.code,packet+internet_layer_start+transport_layer_start +1, 1);
         printf("Code: %u\n",pkt.proto.icmp_hdr.code);
         memcpy(&pkt.proto.icmp_hdr.checksum,packet+internet_layer_start+transport_layer_start +2, 2);
-        printf("Checksum: %x\n",pkt.proto.icmp_hdr.checksum);
+        printf("Checksum: %x\n",ntohs(pkt.proto.icmp_hdr.checksum));
     }
 
     //void *payload;
