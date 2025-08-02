@@ -185,7 +185,7 @@ packet
     char src_ipv6[INET6_ADDRSTRLEN], dst_ipv6[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.src_addr, src_ipv6, INET6_ADDRSTRLEN);
     inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.dst_addr, dst_ipv6, INET6_ADDRSTRLEN);
-        // Print IPv6 header fields
+    // Print IPv6 header fields
     printf("=== IPv6 Header ===\n");
     printf("Version/Traffic Class/Flow Label: 0x%08x\n", ntohl(pkt.net_hdr.ipv6_hdr.ver_tc_fl));
     printf("Payload Length: %u\n", ntohs(pkt.net_hdr.ipv6_hdr.payload_len));
