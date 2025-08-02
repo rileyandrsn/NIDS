@@ -118,10 +118,7 @@ packet
   */
   // Print entire raw hex of packet
   printf("Raw packet hex dump:\n");
-  int bytes_to_print =
-      (packet_len < 66)
-          ? packet_len
-          : 66;  // Print up to 66 bytes or packet length, whichever is smaller
+  int bytes_to_print = (packet_len < 66) ? packet_len : 66;  // Print up to 66 bytes or packet length, whichever is smaller
   for (int i = 0; i < bytes_to_print; i++) {
     printf("%02x ", packet[i]);
     if ((i + 1) % 16 == 0) {
