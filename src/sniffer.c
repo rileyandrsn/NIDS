@@ -11,15 +11,14 @@ int is_valid_dev(char *device, char *error_buffer)
 /* <! - Checks if the device user indicates with "-i" flag is a valid network
    interface controller - !>*/
 /*
-@param *device : Derefrenced pointer - name of device user specified
+@param *device : Name of device user specified
 @param error_buffer : Error buffer (256)
 @return int: is_dev
 */
 {
   pcap_if_t *all_devices_ptr;  // Initialize pcap_if_t pointer "all_devices_ptr"
                                // pointing toward head node of all devices
-  int pcap_result = pcap_findalldevs(
-      &all_devices_ptr, error_buffer);  // Returns -1 on error, 0 otherwise
+  int pcap_result = pcap_findalldevs(&all_devices_ptr, error_buffer);  // Returns -1 on error, 0 otherwise
   if (pcap_result == 0) {
     printf("Successfully initialized all_devices_ptr\n");
   } else {
@@ -29,20 +28,17 @@ int is_valid_dev(char *device, char *error_buffer)
 
   int is_dev = 0;  // is_dev: Initialized to 0 - set to 1 if device
                    // corresponding to users argument following "-i" is valid
-  pcap_if_t *temp_ptr =
-      all_devices_ptr;  // Temp pointer to iterate through all devices ->
+  pcap_if_t *temp_ptr = all_devices_ptr;  // Temp pointer to iterate through all devices ->
                         // compare name of device indicated in command argument
                         // to see if valid
   while (temp_ptr != NULL) {
-    if (strcmp(device, temp_ptr->name) ==
-        0) {  // IF: device indicated by user is a member of "findalldevs"
+    if (strcmp(device, temp_ptr->name) == 0) {  // IF: device indicated by user is a member of "findalldevs"
               // linked list -> is_dev = 1: valid device
       is_dev = 1;
       printf("Found device: %s\n", temp_ptr->name);
       break;
     }
-    temp_ptr =
-        temp_ptr->next;  // Iterate to next node in linked list of all devices
+    temp_ptr = temp_ptr->next;  // Iterate to next node in linked list of all devices
   }
 
   if (!is_dev) {  // IF: device is NOT found, display list of available devices
@@ -70,8 +66,7 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *hdr,
 @param *packet : Packet bytes
 */
 {
-  printf("\n\nThis is a packet: Packet:%p |  Length: %d bytes\n", packet,
-         hdr->len);
+  printf("\n\nThis is a packet: Packet:%p |  Length: %d bytes\n", packet, hdr->len);
   packetParser(packet, hdr->len);
 }
 

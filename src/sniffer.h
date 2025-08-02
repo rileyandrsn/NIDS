@@ -20,8 +20,7 @@ int is_valid_dev(char *device, char *error_buffer);
 @return int: is_dev
 */
 
-void packet_handler(u_char *args, const struct pcap_pkthdr *hdr,
-                    const u_char *packet);
+void packet_handler(u_char *args, const struct pcap_pkthdr *hdr, const u_char *packet);
 /* <! - Displays packet address and size in bytes - !> */
 /*
 @param args : User data
