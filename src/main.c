@@ -2,12 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "sniffer.h"
 
 int main(int argc, char *argv[]) {
-  char *device = "en0";  // Default device name
-
+  char *device = "en0";  // TEMP default device name
   if (argc >= 2) {
     if (strcmp("-i", argv[1]) == 0 && argc >= 3) {
       device = argv[2];
