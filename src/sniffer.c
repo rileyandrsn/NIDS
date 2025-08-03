@@ -8,13 +8,7 @@
 #define PACKET_BUFFER_SIZE 65536  // Maximum packet buffer size in bytes
 
 int is_valid_dev(char *device, char *error_buffer)
-/* <! - Checks if the device user indicates with "-i" flag is a valid network
-   interface controller - !>*/
-/*
-@param *device : Name of device user specified
-@param error_buffer : Error buffer (256)
-@return int: is_dev
-*/
+
 {
   pcap_if_t *all_devices_ptr;  // Initialize pcap_if_t pointer "all_devices_ptr"
                                // pointing toward head node of all devices
