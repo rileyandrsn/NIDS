@@ -2,7 +2,7 @@
 CC = gcc # Use gcc compiler
 CFLAGS = -Wall -g # Enable all warnings and include debug info
 LDFLAGS = -lpcap # Linker flags: include libpcap
-TARGET = osnids # Variable - name of final executable
+TARGET = pinids # Variable - name of final executable
 
 all: $(TARGET) # Default target to build executable
 
