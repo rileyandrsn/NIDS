@@ -97,7 +97,7 @@ typedef struct {
   network_layer_union net_hdr;
   transport_layer_union trans_hdr;
 } packet_t; 
-int char_to_int(char c);
+void parse_hex_input(char *input, int len);
 void print_hex_dump(const u_char *packet, int packet_len); // Prints raw hex dump of packet
 void parse_ethernet_header(const u_char *packet,packet_t *pkt); // Parses ethernet header and creates ethernet header struct
 // Parses either IPv4, IPv6, or ARP header and creates respective struct
@@ -178,7 +178,7 @@ void parse_hex_input(char *input, int len) {
         char byte_str[3] = { input[2*i], input[2*i + 1], '\0' };
         output[i] = (u_char)strtoul(byte_str, NULL, 16);
     }
-    
+
     packetParser(output,output_len);
     free(output);
 }

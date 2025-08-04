@@ -20,7 +20,7 @@ typedef struct{
     uint8_t flags; // Flag options
 } cli_config_t;
 
-const int PACKET_BUFFER_SIZE = 65536;  // Maximum packet buffer size in bytes
+const int PACKET_BUFFER_SIZE = 65535;  // Maximum packet buffer size in bytes
 // Hex values to bit mask flags
 const uint8_t FLAG_DEVICE = 0x01;
 const uint8_t FLAG_HEX = 0x02;

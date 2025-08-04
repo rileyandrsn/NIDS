@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr,"No valid flags set. Use -help for usage information.\n");
             exit(EXIT_FAILURE);
         }else if(config.flags & FLAG_DEVICE){
-            //TODO: send to sniffer.c
+            packetSniffer(config.type.dev);
         }else if (config.flags & FLAG_HEX){
             parse_hex_input(config.type.hex_t.hex,config.type.hex_t.hex_len);
         }
