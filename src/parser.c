@@ -3,8 +3,9 @@
 #include <pcap.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
+#include <ctype.h>
 #include "sniffer.h"
 
 
@@ -96,7 +97,7 @@ typedef struct {
   network_layer_union net_hdr;
   transport_layer_union trans_hdr;
 } packet_t; 
-
+int char_to_int(char c);
 void print_hex_dump(const u_char *packet, int packet_len); // Prints raw hex dump of packet
 void parse_ethernet_header(const u_char *packet,packet_t *pkt); // Parses ethernet header and creates ethernet header struct
 // Parses either IPv4, IPv6, or ARP header and creates respective struct
@@ -145,8 +146,46 @@ int packetParser(const u_char *packet, int packet_len){
 return 0;
 }
 
+void parse_hex_input(char *input, int len) {
+    if (input == NULL || len <= 0) {
+        fprintf(stderr, "Error: Null or invalid input.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Ensure length is even (2 hex = 1 byte)
+    if (len % 2 != 0) {
+        fprintf(stderr, "Error: Hex input must contain an even number of characters.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    //
+    for (int i = 0; i < len; i++) {
+        if (!isxdigit((unsigned char)input[i])) { // Check if each character as a valid hexadecimal digit
+            fprintf(stderr, "Error: Invalid hex character '%c' at position %d.\n", input[i], i);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int output_len = len / 2; // u_char (1 byte) is represented by 2 hexadecimal digits
+    u_char *output = malloc(output_len);
+    if (output == NULL) {
+        fprintf(stderr, "Error: Memory allocation failed.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Convert pairs of hex characters to u_char
+    for (int i = 0; i < output_len; i++) {
+        char byte_str[3] = { input[2*i], input[2*i + 1], '\0' };
+        output[i] = (u_char)strtoul(byte_str, NULL, 16);
+    }
+    
+    packetParser(output,output_len);
+    free(output);
+}
+
+
 void print_hex_dump(const u_char *packet, int packet_len){
-    printf("Raw packet hex dump:\n");
+    printf("\nRaw packet hex dump:\n");
     for (int i = 0; i < packet_len; i++) {
     printf("%02x ", packet[i]);
     if ((i + 1) % 16 == 0) {

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "sniffer.h"
 #include "cli.h"
+#include "parser.h"
 const int max_valid_args = 7;
 
 int main(int argc, char *argv[]) {
@@ -19,12 +20,13 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }else{
         cli_config_t config = arg_handler(argc,argv);
-        if(!config){
-            fprintf(stderr,"Issue handling arguments\n");
+        if(config.flags == 0){
+            fprintf(stderr,"No valid flags set. Use -help for usage information.\n");
+            exit(EXIT_FAILURE);
         }else if(config.flags & FLAG_DEVICE){
             //TODO: send to sniffer.c
         }else if (config.flags & FLAG_HEX){
-            //TODO send to parser.c
+            parse_hex_input(config.type.hex_t.hex,config.type.hex_t.hex_len);
         }
     }
 

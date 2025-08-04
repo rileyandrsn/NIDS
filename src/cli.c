@@ -61,7 +61,7 @@ cli_config_t arg_handler(int argc, char *argv[]){
                 fprintf(stderr, "TOO MANY BYTES");
                 exit(EXIT_FAILURE);
             }
-            config.type.hex_t.hex = malloc(config.type.hex_t.hex_len + 1); // Allocate memory for hex input
+            config.type.hex_t.hex = (char *)malloc(config.type.hex_t.hex_len + 1); // Allocate memory for hex input
             strncpy(config.type.hex_t.hex,argv[i + 1],config.type.hex_t.hex_len); // Copy hex input into struct hex field
             config.type.hex_t.hex [config.type.hex_t.hex_len] = '\0';
             config.flags |= FLAG_HEX;
