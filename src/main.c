@@ -2,30 +2,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "sniffer.h"
+#include "cli.h"
+#include "parser.h"
+const int max_valid_args = 7;
 
 int main(int argc, char *argv[]) {
-  char *device = "en0";  // TEMP default device name
-  if (argc >= 2) {
-    if (strcmp("-i", argv[1]) == 0 && argc >= 3) {
-      device = argv[2];
-      printf("Using device: %s\n", device);
-    } else if (strcmp("start", argv[1]) == 0) {
-      printf("Starting sniffer\n");
-      packetSniffer();
-      return 0;
-    } else {
-      printf("Usage: %s [-i <device>] | start\n", argv[0]);
-      printf("  -i <device>  Specify network device (default: en0)\n");
-      printf("  start        Start the packet sniffer\n");
-      return 1;
-    }
-  } else {
-    printf("Usage: %s [-i <device>] | start\n", argv[0]);
-    printf("  -i <device>  Specify network device (default: en0)\n");
-    printf("  start        Start the packet sniffer\n");
-    return 1;
-  }
 
-  return 0;
+    if(!argc){ // Return -1 if no arguments found
+        return -1;
+    }else if(argc > max_valid_args){
+       fprintf(stderr,"TOO MANY ARGUMENTS");
+        exit(EXIT_FAILURE);
+    }else if(argc < 2){
+        printUsage();
+        exit(EXIT_FAILURE);
+    }else{
+        cli_config_t config = arg_handler(argc,argv);
+        if(config.flags == 0){
+            fprintf(stderr,"No valid flags set. Use -help for usage information.\n");
+            exit(EXIT_FAILURE);
+        }else if(config.flags & FLAG_DEVICE){
+            packetSniffer(config.type.dev);
+        }else if (config.flags & FLAG_HEX){
+            parse_hex_input(config.type.hex_t.hex,config.type.hex_t.hex_len);
+        }
+    }
+
+
+return 0;
 }

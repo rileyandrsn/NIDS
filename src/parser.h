@@ -101,7 +101,7 @@ typedef struct {
 } packet_t;
 
 // Function declarations
-
+void parse_hex_input(char *input, int len);
 void print_hex_dump(const u_char *packet, int packet_len);
 void parse_ethernet_header(const u_char *packet, packet_t *pkt);
 void parse_ipv4_header(const u_char *packet, packet_t *pkt, int offset);
