@@ -18,6 +18,8 @@ parser.o: parser.c parser.h
 	$(CC) $(CFLAGS) -c parser.c
 cli.o: cli.c cli.h
 	$(CC) $(CFLAGS) -c cli.c
+rules.o: rules.c rules.h
+	$(CC) $(CFLAGS) -c rules.c
 
 # Rule to clean build
 clean: # Clean up build

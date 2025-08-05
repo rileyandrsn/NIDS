@@ -1,14 +1,8 @@
 [
     {
     "name":"Xmas Scan",
-    "action":"any",
-    "protocol":"any",
-    "msg":"NULL"
-    },
-    {
-    "name":"Syn Flood",
-    "action":"any",
-    "protocol":"any",
-    "msg":"NULL"
-    }    
+    "action":"ALERT",
+    "msg":"XMAS SCAN DETECTED",
+    "protocol":"TCP"
+    }
 ]
