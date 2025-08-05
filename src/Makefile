@@ -1,7 +1,7 @@
 # Compiler & Flags
 CC = gcc # Use gcc compiler
-CFLAGS = -Wall -g # Enable all warnings and include debug info
-LDFLAGS = -lpcap # Linker flags: include libpcap
+CFLAGS = -Wall -g -I/opt/homebrew/include # Enable all warnings and include debug info
+LDFLAGS = -lpcap -L/opt/homebrew/lib -ljson-c # Linker flags: include libpcap
 TARGET = pinids # Variable - name of final executable
 
 all: $(TARGET) # Default target to build executable
