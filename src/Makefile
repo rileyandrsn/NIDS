@@ -7,8 +7,8 @@ TARGET = pinids # Variable - name of final executable
 all: $(TARGET) # Default target to build executable
 
 # Rule to build the final executable from object files
-$(TARGET): main.o sniffer.o parser.o cli.o  # Link object files into the executable
-	$(CC) $(CFLAGS) -o $(TARGET) main.o sniffer.o parser.o cli.o $(LDFLAGS)
+$(TARGET): main.o sniffer.o parser.o cli.o rules.o  # Link object files into the executable
+	$(CC) $(CFLAGS) -o $(TARGET) main.o sniffer.o parser.o cli.o rules.o $(LDFLAGS)
 
 main.o: main.c     
 	$(CC) $(CFLAGS) -c main.c 

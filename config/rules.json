@@ -1,8 +1,14 @@
 [
     {
-    "name":"Xmas Scan",
+    "name":"ICMP Scan",
     "action":"ALERT",
-    "msg":"XMAS SCAN DETECTED",
-    "protocol":"TCP"
+    "msg":"ICMP SCAN DETECTED",
+    "protocol":"ICMP"
+    },
+    {
+    "name":"ARP Scan",
+    "action":"ALERT",
+    "msg":"ARP SCAN DETECTED",
+    "protocol":"ARP"
     }
 ]

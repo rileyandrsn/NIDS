@@ -5,12 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <json-c/json.h>
 
-
-// Function declarations
-
-
-
-int packetSniffer(char *device);
+int packetSniffer(char *device, struct json_object *parsed_json);
 
 #endif  // SNIFFER_H

@@ -10,7 +10,7 @@ char error_buffer[PCAP_ERRBUF_SIZE];
 
 int validate_dev(char *device);
 void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_char *packet);
-int packetSniffer(char *device) {
+int packetSniffer(char *device, struct json_object *parsed_json) {
 
 int result = validate_dev(device);
 if(result == 0){
@@ -39,7 +39,7 @@ if(result != 0){
     fprintf(stderr,"Error activating handle\n");
     exit(EXIT_FAILURE);
 }
-result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, NULL);
+result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, (u_char *)parsed_json);
 if(result != 0 ){
     fprintf(stderr,"Error processing packets\n");
     exit(EXIT_FAILURE);
@@ -68,6 +68,7 @@ int validate_dev(char *device){
     return 0; 
 }
 
-void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_char *packet){
-    packetParser(packet, pkt_hdr->len);
+void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_char *packet) {
+    struct json_object *parsed_json = (struct json_object *)args;  // Cast args back
+    packetParser(packet, pkt_hdr->len, parsed_json);
 }
