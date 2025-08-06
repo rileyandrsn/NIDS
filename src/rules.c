@@ -97,19 +97,20 @@ int validate_rule(rule_t rule)
 }
 
 /*
-Function: int validate_rules(struct json_object *parsed_json)
+Function: rule_t *validate_rules(struct json_object *parsed_json)
 Creates a structure to hold rule fields for each rule in rules.json and calls validate_rule() to check if each rule is valid
 
 Parameters:
 *parsed_json - json_object holding content of rules.json
 
-Returns: int
-INVALID_RULE - if any rule has one field that is invalid
-VALID_RULE - if all rules and their respective fields are valid
+Returns: rule_t
+*pointer pointing toward head node of linked list storing rules
+NULL if an invalid rule is detected
 */
-int validate_rules(struct json_object *parsed_json)
+rule_t *validate_rules(struct json_object *parsed_json)
 {
-    rule_t rule;
+    rule_t *head = NULL;
+    rule_t *current = NULL;
     struct json_object *json_rule; // Stores each separate rule
     struct json_object *json_name;
     struct json_object *json_action;
@@ -118,87 +119,70 @@ int validate_rules(struct json_object *parsed_json)
     int len = json_object_array_length(parsed_json);
 
     for (int i = 0; i < len; i++) {
+        rule_t *rule = malloc(sizeof(rule_t));
+        if(rule == NULL){
+            //add something else here
+            exit(EXIT_FAILURE);
+        }
         json_rule = json_object_array_get_idx(parsed_json, i);
         printf("\nRule: %s\n", json_object_get_string(json_rule));
 
         // Copy values from JSON fields into struct's fields
         json_object_object_get_ex(json_rule, "name", &json_name);
-        strncpy(rule.name, json_object_get_string(json_name), NAME_SIZE - 1);
-        rule.name[NAME_SIZE - 1] = '\0';
+        strncpy(rule->name, json_object_get_string(json_name), NAME_SIZE - 1);
+        rule->name[NAME_SIZE - 1] = '\0';
 
         json_object_object_get_ex(json_rule, "action", &json_action);
-        strncpy(rule.action, json_object_get_string(json_action), ACTION_SIZE - 1);
-        rule.action[ACTION_SIZE - 1] = '\0';
+        strncpy(rule->action, json_object_get_string(json_action), ACTION_SIZE - 1);
+        rule->action[ACTION_SIZE - 1] = '\0';
 
         json_object_object_get_ex(json_rule, "msg", &json_msg);
-        strncpy(rule.msg, json_object_get_string(json_msg), MSG_SIZE - 1);
-        rule.msg[MSG_SIZE - 1] = '\0';
+        strncpy(rule->msg, json_object_get_string(json_msg), MSG_SIZE - 1);
+        rule->msg[MSG_SIZE - 1] = '\0';
 
         json_object_object_get_ex(json_rule, "protocol", &json_protocol);
-        strncpy(rule.protocol, json_object_get_string(json_protocol), PROTOCOL_SIZE - 1);
-        rule.protocol[PROTOCOL_SIZE - 1] = '\0';
+        strncpy(rule->protocol, json_object_get_string(json_protocol), PROTOCOL_SIZE - 1);
+        rule->protocol[PROTOCOL_SIZE - 1] = '\0';
 
-        int result = validate_rule(rule);
+        int result = validate_rule(*rule);
         if (result != VALID_RULE) {
-            return INVALID_RULE;
+            return NULL;
         }
 
+        if(head==NULL){
+            head = rule;
+        }else{
+            current->next = rule;
+        }
+        current = rule;
+
         printf("\n{\n");
-        printf("name: %s \n", rule.name);
-        printf("action: %s \n", rule.action);
-        printf("msg: %s \n", rule.msg);
-        printf("protocol: %s \n}", rule.protocol);
+        printf("name: %s \n", rule->name);
+        printf("action: %s \n", rule->action);
+        printf("msg: %s \n", rule->msg);
+        printf("protocol: %s \n}", rule->protocol);
     }
-    return VALID_RULE;
+    return head;
 }
 
 /*
-Function: int rule_check(struct json_object *parsed_json, packet_t pkt)
+Function: void rule_check(rule_t *head, packet_t pkt)
 Checks each rule specified in rules.json against a packet
 
 Parameters:
-*parsed_json - json_object holding content of rules.json
+*head - head node of linked list storing rules
 pkt - packet structure to be checked
 
 Returns: void
 */
-void rule_check(struct json_object *parsed_json, packet_t pkt)
+void rule_check(rule_t *head, packet_t pkt)
 {
-    rule_t rule;
-    struct json_object *json_rule; // Stores each separate rule
-    struct json_object *json_name;
-    struct json_object *json_action;
-    struct json_object *json_msg;
-    struct json_object *json_protocol;
-    int len = json_object_array_length(parsed_json);
-
-    for (int i = 0; i < len; i++) {
-        json_rule = json_object_array_get_idx(parsed_json, i);
-
-        // Copy values from JSON fields into struct's fields
-        json_object_object_get_ex(json_rule, "name", &json_name);
-        strncpy(rule.name, json_object_get_string(json_name), NAME_SIZE - 1);
-        rule.name[NAME_SIZE - 1] = '\0';
-
-        json_object_object_get_ex(json_rule, "action", &json_action);
-        strncpy(rule.action, json_object_get_string(json_action), ACTION_SIZE - 1);
-        rule.action[ACTION_SIZE - 1] = '\0';
-
-        json_object_object_get_ex(json_rule, "msg", &json_msg);
-        strncpy(rule.msg, json_object_get_string(json_msg), MSG_SIZE - 1);
-        rule.msg[MSG_SIZE - 1] = '\0';
-
-        json_object_object_get_ex(json_rule, "protocol", &json_protocol);
-        strncpy(rule.protocol, json_object_get_string(json_protocol), PROTOCOL_SIZE - 1);
-        rule.protocol[PROTOCOL_SIZE - 1] = '\0';
-        validate_rule(rule);
-
-        printf("\n%s\n", pkt.proto);
-
-        printf("\n%s\n", rule.protocol);
-
-        if (strcmp(pkt.proto, rule.protocol) == 0) {
-            printf("\nALERT\n");
+    rule_t *temp = head;
+    while(temp != NULL){
+        if(strcmp(pkt.proto,temp->protocol) == 0){
+            printf("ALERT");
         }
+        temp = temp->next;
     }
+
 }

@@ -1,21 +1,53 @@
 #ifndef RULES_H
 #define RULES_H
 
-#include "packet.h"
-#include "parser.h"
+// --- External header imports ---
 #include <json-c/json.h>
 #include <stdio.h>
 
-typedef struct {
-    char name[128]; // or use [NAME_SIZE] after the extern fix
-    char action[16];
-    char msg[256];
-    char protocol[8];
-} rule_t;
 
-int validate_rule(rule_t rule);
-int validate_rules(struct json_object *parsed_json);
+// --- Internal header imports ---
+#include "packet.h"
+#include "parser.h"
+#include "rule.h"
+
+// --- Function declarations ---
+
+// --- Function declarations ---
+
+/*
+Function: load_rules()
+Loads rules.json file and reads contents to a json_object struct
+
+Returns: struct json_object *pointer
+parsed_json - pointer to json_object holding parsed_json form rules.json
+NULL - Error opening rules.json file
+*/
 struct json_object *load_rules();
-void rule_check(struct json_object *parsed_json, packet_t pkt);
+
+/*
+Function: rule_t *validate_rules(struct json_object *parsed_json)
+Creates a structure to hold rule fields for each rule in rules.json and calls validate_rule() to check if each rule is valid
+
+Parameters:
+*parsed_json - json_object holding content of rules.json
+
+Returns: rule_t
+*pointer pointing toward head node of linked list storing rules
+NULL if an invalid rule is detected
+*/
+rule_t *validate_rules(struct json_object *parsed_json);
+
+/*
+Function: void rule_check(rule_t *head, packet_t pkt)
+Checks each rule specified in rules.json against a packet
+
+Parameters:
+*head - head node of linked list storing rules
+pkt - packet structure to be checked
+
+Returns: void
+*/
+void rule_check(rule_t *rule, packet_t pkt);
 
 #endif // RULES_H

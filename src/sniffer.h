@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+// --- Internal header imports ---
+#include "rule.h"
+
 // --- Global Variables ---
 #define PACKET_BUFFER_SIZE 65535 // Maximum packet buffer size in bytes
 
@@ -19,9 +22,9 @@ Takes user specified device, validates it, creates a capture handle for device, 
 
 Parameters:
 *device - the name of the device user specified
-*parsed_json - json object holding data from rules.json file
+*rule - pointer to head of linked list storing rules
 Returns: void
 */
-void packetSniffer(char *device, struct json_object *parsed_json);
+void packetSniffer(char *device, rule_t *rule);
 
 #endif // SNIFFER_H

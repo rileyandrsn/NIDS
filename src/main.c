@@ -11,6 +11,7 @@
 #include "parser.h"
 #include "rules.h"
 #include "sniffer.h"
+#include "rule.h"
 
 // --- Global Variables ---
 
@@ -29,17 +30,17 @@ int main(int argc, char *argv[])
     if (json == NULL) {
         exit(EXIT_FAILURE);
     }
-    result = validate_rules(json);
-    if (result == RESULT_ERR) {
+    rule_t *rule = validate_rules(json);
+    if (rule == NULL) {
         exit(EXIT_FAILURE);
     }
     if (config.flags == 0) {
         fprintf(stderr, "No valid flags set. Use -help for usage information.\n");
         exit(EXIT_FAILURE);
     } else if (config.flags & FLAG_DEVICE) {
-        packetSniffer(config.type.dev, json);
+        packetSniffer(config.type.dev, rule);
     } else if (config.flags & FLAG_HEX) {
-        parse_hex_input(config.type.hex_t.hex, config.type.hex_t.hex_len, json);
+        parse_hex_input(config.type.hex_t.hex, config.type.hex_t.hex_len, rule);
     }
 
     return 0;

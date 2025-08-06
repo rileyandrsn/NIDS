@@ -15,21 +15,22 @@
 #include "packet.h"
 #include "rules.h"
 #include "sniffer.h"
+#include "rule.h"
 
 // --- Function declarations ---
 
 /*
-Function: void parse_hex_input(char *input, int len, struct json_object *parsed_json)
+Function: void parse_hex_input(char *input, int len, rule_t *rule)
 Takes user's hex input and validates it, assembles it as a packet, and checks it against rules
 
 Parameters:
 *input - user's raw hex input
 len - length of user's input
-*parsed_json - json_object holding contents of rules.json
+*rule - pointer pointing toward head node of linked list storing rules
 
 Returns: void
 */
-void parse_hex_input(char *input, int len, struct json_object *parsed_json);
+void parse_hex_input(char *input, int len, rule_t *rule);
 
 /*
 Function: void print_hex_dump(const u_char *packet, int packet_len)
@@ -74,15 +75,15 @@ void parse_udp_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_icmp_header(const u_char *packet, packet_t *pkt, int offset);
 
 /*
-Function: int packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json)
+Function: void packetParser(const u_char *packet, int packet_len, rule_t *rule)
 
 Parameters:
 *packet - raw u_char bytes of packet data
 packet_len - length of packet in bytes
-*parsed_json - json_object holding contents of rules.json
+*rule - pointer pointing toward head node of linked list storing rules
 
 Returns: void
 */
-void packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json);
+void packetParser(const u_char *packet, int packet_len, rule_t *rule);
 
 #endif // PARSER_H

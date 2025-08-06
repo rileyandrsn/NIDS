@@ -5,6 +5,7 @@
 #include <string.h>
 // --- Internal header imports ---
 #include "parser.h"
+#include "rule.h"
 
 // --- Global variables ---
 char error_buffer[PCAP_ERRBUF_SIZE];
@@ -55,7 +56,7 @@ Function: packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const 
 Sends data from each packet captured in pcap_loop to be parsed
 
 Parameters:
-*args - custom argument: parsed json struct
+*args - custom argument: pointer to head node of linked list storing rules
 *pkt_hdr - packet header: holds timestamp, captured length of packet, and actual length of packet
 *packet - holds the raw bytes of packet data
 Returns: void
@@ -66,8 +67,8 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_cha
         fprintf(stderr, "Error setting arguments\n");
         exit(EXIT_FAILURE);
     }
-    struct json_object *parsed_json = (struct json_object *)args; // Cast args back
-    packetParser(packet, pkt_hdr->len, parsed_json);
+    rule_t *rule = (rule_t *)args; // Cast args back
+    packetParser(packet, pkt_hdr->len, rule);
 }
 
 /*
@@ -116,12 +117,12 @@ Takes user specified device, validates it, creates a capture handle for device, 
 
 Parameters:
 *device - the name of the device user specified
-*parsed_json - json object holding data from rules.json file
+*rule - pointer to head of linked list storing rules
 Returns: void
 */
-void packetSniffer(char *device, struct json_object *parsed_json)
+void packetSniffer(char *device, rule_t *rule)
 {
-    if (!device || !parsed_json) {
+    if (!device || !rule) {
         fprintf(stderr, "Invalid arguments to packetSniffer\n");
         exit(EXIT_FAILURE);
     }
@@ -144,7 +145,7 @@ void packetSniffer(char *device, struct json_object *parsed_json)
         fprintf(stderr, "Error activating handle\n");
         exit(EXIT_FAILURE);
     }
-    result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, (u_char *)parsed_json);
+    result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
     if (result != LOOP_BREAK) {
         fprintf(stderr, "Error processing packets\n");
         exit(EXIT_FAILURE);

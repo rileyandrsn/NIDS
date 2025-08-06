@@ -12,21 +12,22 @@
 #include "packet.h"
 #include "rules.h"
 #include "sniffer.h"
+#include "rule.h"
 
 // --- Function declarations ---
 
 /*
-Function: void parse_hex_input(char *input, int len, struct json_object *parsed_json)
+Function: void parse_hex_input(char *input, int len, rule_t *rule)
 Takes user's hex input and validates it, assembles it as a packet, and checks it against rules
 
 Parameters:
 *input - user's raw hex input
 len - length of user's input
-*parsed_json - json_object holding contents of rules.json
+*rule - pointer pointing toward head node of linked list storing rules
 
 Returns: void
 */
-void parse_hex_input(char *input, int len, struct json_object *parsed_json)
+void parse_hex_input(char *input, int len, rule_t *rule)
 {
     if (input == NULL || len <= 0) {
         fprintf(stderr, "Error: Null or invalid input.\n");
@@ -59,7 +60,7 @@ void parse_hex_input(char *input, int len, struct json_object *parsed_json)
         output[i] = (u_char)strtoul(byte_str, NULL, 16);
     }
 
-    packetParser(output, output_len, parsed_json);
+    packetParser(output, output_len, rule);
     free(output);
 }
 
@@ -325,16 +326,16 @@ void parse_ipv6_header(const u_char *packet, packet_t *pkt, int offset)
 }
 
 /*
-Function: int packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json)
+Function: void packetParser(const u_char *packet, int packet_len, rule_t *rule)
 
 Parameters:
 *packet - raw u_char bytes of packet data
 packet_len - length of packet in bytes
-*parsed_json - json_object holding contents of rules.json
+*rule - pointer pointing toward head node of linked list storing rules
 
 Returns: void
 */
-void packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json)
+void packetParser(const u_char *packet, int packet_len, rule_t *rule)
 {
     packet_t pkt; // Create instance of packet
     print_hex_dump(packet, packet_len);
@@ -370,5 +371,5 @@ void packetParser(const u_char *packet, int packet_len, struct json_object *pars
     } else if (pkt.net_hdr.ipv6_hdr.next_hdr == 58) {
         parse_icmp_header(packet, &pkt, 54); // ICMPv6
     }
-    rule_check(parsed_json, pkt);
+    rule_check(rule, pkt);
 }
