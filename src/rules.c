@@ -194,6 +194,24 @@ int match_protocol(rule_t *rule, packet_t pkt)
 }
 
 /*
+Function: void trigger_action(rule_t *rule)
+Triggers selected action specified by action field in rules.jsons
+
+Parameters:
+*rule - list node storing a rule structure
+
+Returns: void
+*/
+void trigger_action(rule_t *rule)
+{
+    if (strcmp(rule->action, "ALERT") == 0) {
+        printf("[%s] %s\n", rule->action, rule->msg);
+    } else if (strcmp(rule->action, "LOG") == 0){
+        printf("LOG");
+    }
+}
+
+/*
 Function: void rule_check(rule_t *head, packet_t pkt)
 Checks each rule specified in rules.json against a packet
 
@@ -218,7 +236,7 @@ void rule_check(rule_t *head, packet_t pkt)
             if (!match_functions[i](r, pkt)) {
                 num_matches++;
                 if (num_matchers == num_matches) {
-                    printf("[%s] %s\n", r->action, r->msg);
+                    trigger_action(r);
                 }
                 break;
             }
