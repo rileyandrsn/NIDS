@@ -1,111 +1,88 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+// --- External header imports ---
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <netinet/in.h>
 #include <pcap.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <json-c/json.h>
+
+// --- Internal header imports ---
+#include "packet.h"
+#include "rules.h"
 #include "sniffer.h"
 
-// --- Struct definitions moved from parser.c ---
-
-typedef struct {
-  uint8_t dst_mac[6];
-  uint8_t src_mac[6];
-  uint16_t eth_type;
-} eth_header;
-
-typedef struct {
-  uint8_t version_ihl;
-  uint8_t service;
-  uint16_t total_len;
-  uint16_t identification;
-  uint16_t flags_frag_offset;
-  uint8_t ttl;
-  uint8_t protocol;
-  uint16_t hdr_checksum;
-  uint32_t src_ip;
-  uint32_t dst_ip;
-} ipv4_header;
-
-typedef struct {
-  uint32_t ver_tc_fl;
-  uint16_t payload_len;
-  uint8_t next_hdr;
-  uint8_t hop_limit;
-  struct in6_addr src_addr;
-  struct in6_addr dst_addr;
-} ipv6_header;
-
-typedef struct {
-  uint16_t hardware_type;
-  uint16_t protocol_type;
-  uint8_t hardware_len;
-  uint8_t protocol_len;
-  uint16_t operation;
-  uint8_t sha[6];
-  uint32_t spa;
-  uint8_t tha[6];
-  uint32_t tpa;
-} __attribute__((packed)) arp_header;
-
-typedef union {
-  ipv4_header ipv4_hdr;
-  ipv6_header ipv6_hdr;
-  arp_header arp_hdr;
-} network_layer_union;
-
-typedef struct {
-  uint16_t src_port;
-  uint16_t dst_port;
-  uint32_t sequence_num;
-  uint32_t ack_num;
-  uint8_t data_offset_reserved;
-  uint8_t flags;
-  uint16_t window_size;
-  uint16_t checksum;
-  uint16_t urgent_pointer;
-} tcp_header;
-
-typedef struct {
-  uint16_t src_port;
-  uint16_t dst_port;
-  uint16_t len;
-  uint16_t checksum;
-} udp_header;
-
-typedef struct {
-  uint8_t type;
-  uint8_t code;
-  uint16_t checksum;
-} icmp_header;
-
-typedef union {
-  tcp_header tcp_hdr;
-  udp_header udp_hdr;
-  icmp_header icmp_hdr;
-} transport_layer_union;
-
-typedef struct {
-  eth_header eth_hdr;
-  network_layer_union net_hdr;
-  transport_layer_union trans_hdr;
-  char proto[8];
-} packet_t;
-
 // --- Function declarations ---
+
+/*
+Function: void parse_hex_input(char *input, int len, struct json_object *parsed_json)
+Takes user's hex input and validates it, assembles it as a packet, and checks it against rules
+
+Parameters:
+*input - user's raw hex input
+len - length of user's input
+*parsed_json - json_object holding contents of rules.json
+
+Returns: void
+*/
 void parse_hex_input(char *input, int len, struct json_object *parsed_json);
+
+/*
+Function: void print_hex_dump(const u_char *packet, int packet_len)
+Prints the raw hex stream of captured packet
+
+Parameters:
+*packet - raw u_char bytes of packet data
+packet_len - length of packet in bytes
+
+Returns: void
+*/
 void print_hex_dump(const u_char *packet, int packet_len);
+
+/*
+Function: void parse_ethernet_header(const u_char *packet, packet_t *pkt)
+Parses packet and sets packet fields to values corresponding to ethernet header
+
+Parameters:
+*packet - raw u_char bytes of packet data
+*pkt - packet structure to store values
+
+Returns: void
+*/
 void parse_ethernet_header(const u_char *packet, packet_t *pkt);
+
+/*
+Function: void parse_*_header(const u_char *packet, packet_t *pkt, int offset)
+Parses packet and sets packet fields to values corresponding to each header
+
+Parameters:
+*packet - raw u_char bytes of packet data
+*pkt - packet structure to store values
+offset - integer offset indicating at what byte each header starts
+
+Returns: void
+*/
 void parse_ipv4_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_ipv6_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_arp_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_tcp_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_udp_header(const u_char *packet, packet_t *pkt, int offset);
 void parse_icmp_header(const u_char *packet, packet_t *pkt, int offset);
-int packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json);
 
-#endif  // PARSER_H
+/*
+Function: int packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json)
+
+Parameters:
+*packet - raw u_char bytes of packet data
+packet_len - length of packet in bytes
+*parsed_json - json_object holding contents of rules.json
+
+Returns: void
+*/
+void packetParser(const u_char *packet, int packet_len, struct json_object *parsed_json);
+
+#endif // PARSER_H

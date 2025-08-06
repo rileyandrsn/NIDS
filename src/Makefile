@@ -24,3 +24,12 @@ rules.o: rules.c rules.h
 # Rule to clean build
 clean: # Clean up build
 	rm -f *.o $(TARGET)
+
+# List of source files to format
+SRC := $(shell find . -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.c" -o -name "*.h" \))
+
+# clang-format target
+format:
+	clang-format -i $(SRC)
+
+.PHONY: format

@@ -1,39 +1,46 @@
+// --- External header imports ---
+#include <json-c/json.h>
 #include <pcap.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include "sniffer.h"
+
+// --- Internal header imports ---
 #include "cli.h"
 #include "parser.h"
-#include <json-c/json.h>
 #include "rules.h"
-const int max_valid_args = 7;
+#include "sniffer.h"
 
-int main(int argc, char *argv[]) {
+// --- Global Variables ---
 
-    if(!argc){ // Return -1 if no arguments found
-        return -1;
-    }else if(argc > max_valid_args){
-       fprintf(stderr,"TOO MANY ARGUMENTS");
+const int RESULT_ERR = -1;
+
+// --- Program entry point ---
+
+int main(int argc, char *argv[])
+{
+    int result = arg_validator(argc);
+    if (result == RESULT_ERR) {
         exit(EXIT_FAILURE);
-    }else if(argc < 2){
-        printUsage();
+    }
+    cli_config_t config = arg_handler(argc, argv);
+    struct json_object *json = load_rules();
+    if (json == NULL) {
         exit(EXIT_FAILURE);
-    }else{
-        cli_config_t config = arg_handler(argc,argv);
-        struct json_object *json = load_rules();
-        int result = validate_rules(json);
-        if(config.flags == 0){
-            fprintf(stderr,"No valid flags set. Use -help for usage information.\n");
-            exit(EXIT_FAILURE);
-        }else if(config.flags & FLAG_DEVICE){
-            packetSniffer(config.type.dev,json);
-        }else if (config.flags & FLAG_HEX){
-            parse_hex_input(config.type.hex_t.hex, config.type.hex_t.hex_len, json);
-        }
+    }
+    result = validate_rules(json);
+    if (result == RESULT_ERR) {
+        exit(EXIT_FAILURE);
+    }
+    if (config.flags == 0) {
+        fprintf(stderr, "No valid flags set. Use -help for usage information.\n");
+        exit(EXIT_FAILURE);
+    } else if (config.flags & FLAG_DEVICE) {
+        packetSniffer(config.type.dev, json);
+    } else if (config.flags & FLAG_HEX) {
+        parse_hex_input(config.type.hex_t.hex, config.type.hex_t.hex_len, json);
     }
 
-
-return 0;
+    return 0;
 }
