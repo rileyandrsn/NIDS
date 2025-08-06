@@ -10,9 +10,9 @@
 
 // --- Internal header imports ---
 #include "packet.h"
+#include "rule.h"
 #include "rules.h"
 #include "sniffer.h"
-#include "rule.h"
 
 // --- Function declarations ---
 
@@ -112,7 +112,8 @@ Parameters:
 
 Returns: void
 */
-void print_ethernet_header(packet_t *pkt){
+void print_ethernet_header(packet_t *pkt)
+{
     printf("=== Ethernet Header ===\n");
     printf("Destination MAC: %02x:%02x:%02x:%02x:%02x:%02x\n",
         pkt->eth_hdr.dst_mac[0], pkt->eth_hdr.dst_mac[1], pkt->eth_hdr.dst_mac[2],
@@ -136,7 +137,6 @@ Returns: void
 */
 void parse_tcp_header(const u_char *packet, packet_t *pkt, int offset)
 {
-    printf("Offset: %d\n",offset);
     memcpy(&pkt->trans_hdr.tcp_hdr.src_port, packet + offset, 2);
     memcpy(&pkt->trans_hdr.tcp_hdr.dst_port, packet + offset + 2, 2);
     memcpy(&pkt->trans_hdr.tcp_hdr.sequence_num, packet + offset + 4, 4);
@@ -158,7 +158,8 @@ Parameters:
 
 Returns: void
 */
-void print_tcp_header(packet_t *pkt){
+void print_tcp_header(packet_t *pkt)
+{
     printf("\n < ! - - - - - TCP HEADER - - - - - ! >\n");
     printf("SRC PORT: %u\n", ntohs(pkt->trans_hdr.tcp_hdr.src_port));
     printf("DST PORT: %u\n", ntohs(pkt->trans_hdr.tcp_hdr.dst_port));
@@ -216,7 +217,8 @@ Parameters:
 
 Returns: void
 */
-void print_udp_header(packet_t *pkt){
+void print_udp_header(packet_t *pkt)
+{
     printf("\n < ! - - - - - UDP HEADER - - - - - ! >\n");
     printf("Source Port: %u\n", ntohs(pkt->trans_hdr.udp_hdr.src_port));
     printf("Destination Port: %u\n", ntohs(pkt->trans_hdr.udp_hdr.dst_port));
@@ -252,7 +254,8 @@ Parameters:
 
 Returns: void
 */
-void print_icmp_header(packet_t *pkt){
+void print_icmp_header(packet_t *pkt)
+{
     printf("\n < ! - - - - - ICMP HEADER - - - - - ! >\n");
     printf("Type: %u\n", pkt->trans_hdr.icmp_hdr.type);
     printf("Code: %u\n", pkt->trans_hdr.icmp_hdr.code);
@@ -294,7 +297,8 @@ Parameters:
 
 Returns: void
 */
-void print_arp_header(packet_t *pkt){
+void print_arp_header(packet_t *pkt)
+{
     struct in_addr src_addr, dst_addr;
     src_addr.s_addr = pkt->net_hdr.arp_hdr.spa;
     dst_addr.s_addr = pkt->net_hdr.arp_hdr.tpa;
@@ -348,7 +352,8 @@ Parameters:
 
 Returns: void
 */
-void print_ipv4_header(packet_t *pkt){
+void print_ipv4_header(packet_t *pkt)
+{
     struct in_addr src_addr, dst_addr;
     src_addr.s_addr = pkt->net_hdr.ipv4_hdr.src_ip;
     dst_addr.s_addr = pkt->net_hdr.ipv4_hdr.dst_ip;
@@ -395,7 +400,8 @@ Parameters:
 
 Returns: void
 */
-void print_ipv6_header(packet_t *pkt){
+void print_ipv6_header(packet_t *pkt)
+{
     char src_ipv6[INET6_ADDRSTRLEN], dst_ipv6[INET6_ADDRSTRLEN];
     inet_ntop(AF_INET6, &pkt->net_hdr.ipv6_hdr.src_addr, src_ipv6, INET6_ADDRSTRLEN);
     inet_ntop(AF_INET6, &pkt->net_hdr.ipv6_hdr.dst_addr, dst_ipv6, INET6_ADDRSTRLEN);
@@ -458,7 +464,7 @@ void packetParser(const u_char *packet, int packet_len, rule_t *rule)
         parse_udp_header(packet, &pkt, offset);
         print_udp_header(&pkt);
     } else if (pkt.net_hdr.ipv6_hdr.next_hdr == 58) { // ICMPv6
-        parse_icmp_header(packet, &pkt, 54); 
+        parse_icmp_header(packet, &pkt, 54);
         print_icmp_header(&pkt);
     }
     rule_check(rule, pkt);

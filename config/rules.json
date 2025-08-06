@@ -6,9 +6,9 @@
     "protocol":"ICMP"
     },
     {
-    "name":"ARP Scan",
+    "name":"UDP Scan",
     "action":"ALERT",
-    "msg":"ARP SCAN DETECTED",
-    "protocol":"ARP"
+    "msg":"UDP SCAN DETECTED",
+    "protocol":"UDP"
     }
 ]

@@ -5,7 +5,8 @@
 
 // --- Internal header imports ---
 #include "packet.h"
-#include "rules.h"
+#include "parser.h"
+#include "rule.h"
 
 // --- Global variables ---
 const int NAME_SIZE = 128;
@@ -14,7 +15,7 @@ const int MSG_SIZE = 256;
 const int PROTOCOL_SIZE = 8;
 const char *ACTION_TYPES[] = { "ALERT", "LOG" };
 const int ACTION_TYPES_LEN = sizeof(ACTION_TYPES) / sizeof(ACTION_TYPES[0]);
-const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP" };
+const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP", "ANY" };
 const int PROTOCOL_TYPES_LEN = sizeof(PROTOCOL_TYPES) / sizeof(PROTOCOL_TYPES[0]);
 const int VALID_RULE = 0;
 const int INVALID_RULE = -1;
@@ -120,9 +121,8 @@ rule_t *validate_rules(struct json_object *parsed_json)
 
     for (int i = 0; i < len; i++) {
         rule_t *rule = malloc(sizeof(rule_t));
-        if(rule == NULL){
-            //add something else here
-            exit(EXIT_FAILURE);
+        if (rule == NULL) {
+            return NULL;
         }
         json_rule = json_object_array_get_idx(parsed_json, i);
         printf("\nRule: %s\n", json_object_get_string(json_rule));
@@ -140,18 +140,22 @@ rule_t *validate_rules(struct json_object *parsed_json)
         strncpy(rule->msg, json_object_get_string(json_msg), MSG_SIZE - 1);
         rule->msg[MSG_SIZE - 1] = '\0';
 
-        json_object_object_get_ex(json_rule, "protocol", &json_protocol);
-        strncpy(rule->protocol, json_object_get_string(json_protocol), PROTOCOL_SIZE - 1);
-        rule->protocol[PROTOCOL_SIZE - 1] = '\0';
+        if (json_object_object_get_ex(json_rule, "protocol", &json_protocol)) {
+            strncpy(rule->protocol, json_object_get_string(json_protocol), PROTOCOL_SIZE - 1);
+            rule->protocol[PROTOCOL_SIZE - 1] = '\0';
+        } else {
+            strncpy(rule->protocol, "ANY", PROTOCOL_SIZE - 1);
+            rule->protocol[PROTOCOL_SIZE - 1] = '\0';
+        }
 
         int result = validate_rule(*rule);
         if (result != VALID_RULE) {
             return NULL;
         }
 
-        if(head==NULL){
+        if (head == NULL) {
             head = rule;
-        }else{
+        } else {
             current->next = rule;
         }
         current = rule;
@@ -163,6 +167,30 @@ rule_t *validate_rules(struct json_object *parsed_json)
         printf("protocol: %s \n}", rule->protocol);
     }
     return head;
+}
+
+// Function pointer for rule-matching functions
+typedef int (*rule_match_func)(rule_t *rule, packet_t pkt);
+
+/*
+Function: int match_protocol(rule_t *rule, packet_t pkt)
+Check if rule's protocol field matches packet's protocol field
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+1 - if a match is found
+0 - if no match is found
+*/
+int match_protocol(rule_t *rule, packet_t pkt)
+{
+    if (strcmp(rule->protocol, pkt.proto) != 0) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 /*
@@ -177,12 +205,23 @@ Returns: void
 */
 void rule_check(rule_t *head, packet_t pkt)
 {
-    rule_t *temp = head;
-    while(temp != NULL){
-        if(strcmp(pkt.proto,temp->protocol) == 0){
-            printf("ALERT");
-        }
-        temp = temp->next;
-    }
+    // List of rule-matching functions
+    rule_match_func match_functions[] = {
+        match_protocol
+    };
 
+    int num_matches = 0; // Number of fields in a rule a packet matches
+    int num_matchers = sizeof(match_functions) / sizeof(match_functions[0]); // Number of matching functions
+
+    for (rule_t *r = head; r != NULL; r = r->next) {
+        for (int i = 0; i < num_matchers; i++) {
+            if (!match_functions[i](r, pkt)) {
+                num_matches++;
+                if (num_matchers == num_matches) {
+                    printf("[%s] %s\n", r->action, r->msg);
+                }
+                break;
+            }
+        }
+    }
 }
