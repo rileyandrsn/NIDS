@@ -3,6 +3,7 @@
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 // --- Internal header imports ---
 #include "packet.h"
@@ -23,7 +24,7 @@ const int PROTOCOL_TYPES_LEN = sizeof(PROTOCOL_TYPES) / sizeof(PROTOCOL_TYPES[0]
 const int VALID_RULE = 0;
 const int INVALID_RULE = -1;
 const int FILE_BUFF_SIZE = 1024;
-
+const char *const LOG_FILE_PATH = "/Users/rileyanderson/Documents/GitHub/NIDS/docs/events.log";
 // --- Function declarations ---
 
 /*
@@ -430,6 +431,19 @@ int match_flags(rule_t *rule, packet_t pkt)
     }
 }
 
+int log_event(rule_t *rule)
+{
+    time_t now = time(NULL);
+    char *timestamp = ctime(&now);
+    timestamp[strlen(timestamp) - 1] = '\0';
+    FILE *log_file = fopen(LOG_FILE_PATH, "a");
+    if (!log_file)
+        return 0;
+    fprintf(log_file, "%s |[%s] %s | %s %s %s -> %s %s {Flags: 0x%x/%d}\n",
+        timestamp, rule->action, rule->msg, rule->protocol, rule->src_addr, rule->src_port, rule->dst_addr, rule->dst_port, rule->flags, rule->flags);
+    return 1;
+}
+
 /*
 Function: void trigger_action(rule_t *rule)
 Triggers selected action specified by action field in rules.jsons
@@ -442,9 +456,15 @@ Returns: void
 void trigger_action(rule_t *rule)
 {
     if (strcmp(rule->action, "ALERT") == 0) {
-        printf("[%s] %s\n", rule->action, rule->msg);
+        time_t now = time(NULL);
+        char *timestamp = ctime(&now);
+        timestamp[strlen(timestamp) - 1] = '\0';
+        printf("%s |[%s] %s | %s %s %s -> %s %s {Flags: 0x%x/%d}\n",
+            timestamp, rule->action, rule->msg, rule->protocol, rule->src_addr, rule->src_port, rule->dst_addr, rule->dst_port, rule->flags, rule->flags);
     } else if (strcmp(rule->action, "LOG") == 0) {
-        printf("LOG");
+        if (!log_event(rule)) {
+            fprintf(stderr, "Error printing log\n");
+        }
     }
 }
 
