@@ -1,4 +1,5 @@
 // --- External header imports ---
+#include <arpa/inet.h>
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,6 +15,7 @@ const int ACTION_SIZE = 16;
 const int MSG_SIZE = 256;
 const int PROTOCOL_SIZE = 8;
 const int PORT_SIZE = 6;
+const int ADDR_SIZE = 32;
 const char *ACTION_TYPES[] = { "ALERT", "LOG" };
 const int ACTION_TYPES_LEN = sizeof(ACTION_TYPES) / sizeof(ACTION_TYPES[0]);
 const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP", "ANY" };
@@ -118,7 +120,9 @@ rule_t *validate_rules(struct json_object *parsed_json)
     struct json_object *json_action;
     struct json_object *json_msg;
     struct json_object *json_protocol;
+    struct json_object *json_src_addr;
     struct json_object *json_src_port;
+    struct json_object *json_dst_addr;
     struct json_object *json_dst_port;
     int len = json_object_array_length(parsed_json);
 
@@ -151,12 +155,28 @@ rule_t *validate_rules(struct json_object *parsed_json)
             rule->protocol[PROTOCOL_SIZE - 1] = '\0';
         }
 
+        if (json_object_object_get_ex(json_rule, "src_addr", &json_src_addr)) {
+            strncpy(rule->src_addr, json_object_get_string(json_src_addr), ADDR_SIZE - 1);
+            rule->src_addr[ADDR_SIZE - 1] = '\0';
+        } else {
+            strncpy(rule->src_addr, "ANY", ADDR_SIZE - 1);
+            rule->src_addr[ADDR_SIZE - 1] = '\0';
+        }
+
         if (json_object_object_get_ex(json_rule, "src_port", &json_src_port)) {
             strncpy(rule->src_port, json_object_get_string(json_src_port), PORT_SIZE - 1);
             rule->src_port[PORT_SIZE - 1] = '\0';
         } else {
             strncpy(rule->src_port, "ANY", PORT_SIZE - 1);
             rule->src_port[PORT_SIZE - 1] = '\0';
+        }
+
+        if (json_object_object_get_ex(json_rule, "dst_addr", &json_dst_addr)) {
+            strncpy(rule->dst_addr, json_object_get_string(json_dst_addr), ADDR_SIZE - 1);
+            rule->dst_addr[ADDR_SIZE - 1] = '\0';
+        } else {
+            strncpy(rule->dst_addr, "ANY", ADDR_SIZE - 1);
+            rule->dst_addr[ADDR_SIZE - 1] = '\0';
         }
 
         if (json_object_object_get_ex(json_rule, "dst_port", &json_dst_port)) {
@@ -169,6 +189,7 @@ rule_t *validate_rules(struct json_object *parsed_json)
 
         int result = validate_rule(*rule);
         if (result != VALID_RULE) {
+            free(rule);
             return NULL;
         }
 
@@ -184,7 +205,10 @@ rule_t *validate_rules(struct json_object *parsed_json)
         printf("action: %s \n", rule->action);
         printf("msg: %s \n", rule->msg);
         printf("protocol: %s \n}", rule->protocol);
+        printf("source addr: %s \n}", rule->src_addr);
         printf("source port: %s \n}", rule->src_port);
+        printf("dest addr: %s \n}", rule->dst_addr);
+        printf("dest port: %s \n}", rule->dst_port);
     }
     return head;
 }
@@ -201,8 +225,8 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-1 - if a match is found
-0 - if no match is found
+0 - if a match is found
+1 - if no match is found
 */
 int match_protocol(rule_t *rule, packet_t pkt)
 {
@@ -222,8 +246,8 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-1 - if a match is found
-0 - if no match is found
+0 - if a match is found
+1 - if no match is found
 */
 int match_src_port(rule_t *rule, packet_t pkt)
 {
@@ -232,18 +256,18 @@ int match_src_port(rule_t *rule, packet_t pkt)
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.src_port));
-        if (strcmp(rule->src_port, str) != 0) {
-            return 1;
-        } else {
+        if (strcmp(rule->src_port, str) == 0) {
             return 0;
+        } else {
+            return 1;
         }
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.src_port));
-        if (strcmp(rule->src_port, str) != 0) {
-            return 1;
-        } else {
+        if (strcmp(rule->src_port, str) == 0) {
             return 0;
+        } else {
+            return 1;
         }
     } else {
         return 1;
@@ -259,8 +283,8 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-1 - if a match is found
-0 - if no match is found
+0 - if a match is found
+1 - if no match is found
 */
 int match_dst_port(rule_t *rule, packet_t pkt)
 {
@@ -269,20 +293,108 @@ int match_dst_port(rule_t *rule, packet_t pkt)
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.dst_port));
-        if (strcmp(rule->dst_port, str) != 0) {
-            return 1;
-        } else {
+        if (strcmp(rule->dst_port, str) == 0) {
             return 0;
+        } else {
+            return 1;
         }
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.dst_port));
-        if (strcmp(rule->dst_port, str) != 0) {
-            return 1;
-        } else {
+        if (strcmp(rule->dst_port, str) == 0) {
             return 0;
+        } else {
+            return 1;
         }
     } else {
+        return 1;
+    }
+}
+
+/*
+Function: int match_src_addr(rule_t *rule, packet_t pkt)
+Check if rule's source IP address matches packet's source IP address
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+0 - if a match is found
+1 - if no match is found
+*/
+int match_src_addr(rule_t *rule, packet_t pkt)
+{
+    if (strcmp(rule->src_addr, "ANY") == 0)
+        return 0;
+
+    switch (ntohs(pkt.eth_hdr.eth_type)) {
+    case 0x0800: { // IPv4
+        struct in_addr src_ipv4;
+        src_ipv4.s_addr = pkt.net_hdr.ipv4_hdr.src_ip;
+        if (strcmp(rule->src_addr, inet_ntoa(src_ipv4)) == 0) {
+            return 0;
+        } else {
+            return 1;
+        }
+        break;
+    }
+    case 0x86DD: { // IPv6
+        char src_ipv6[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.src_addr, src_ipv6, INET6_ADDRSTRLEN);
+        if (strcmp(rule->src_addr, src_ipv6) == 0) {
+            return 0;
+        } else {
+            return 1;
+        }
+        break;
+    }
+    default:
+        printf("\nUNKNOWN PROTOCOL\n");
+        return 1;
+    }
+}
+
+/*
+Function: int match_dst_addr(rule_t *rule, packet_t pkt)
+Check if rule's destination IP address matches packet's destination IP address
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+0 - if a match is found
+1 - if no match is found
+*/
+int match_dst_addr(rule_t *rule, packet_t pkt)
+{
+    if (strcmp(rule->dst_addr, "ANY") == 0)
+        return 0;
+
+    switch (ntohs(pkt.eth_hdr.eth_type)) {
+    case 0x0800: { // IPv4
+        struct in_addr dst_ipv4;
+        dst_ipv4.s_addr = pkt.net_hdr.ipv4_hdr.dst_ip;
+        if (strcmp(rule->dst_addr, inet_ntoa(dst_ipv4)) == 0) {
+            return 0;
+        } else {
+            return 1;
+        }
+        break;
+    }
+    case 0x86DD: { // IPv6
+        char dst_ipv6[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.dst_addr, dst_ipv6, INET6_ADDRSTRLEN);
+        if (strcmp(rule->dst_addr, dst_ipv6) == 0) {
+            return 0;
+        } else {
+            return 1;
+        }
+        break;
+    }
+    default:
+        printf("\nUNKNOWN PROTOCOL\n");
         return 1;
     }
 }
@@ -319,7 +431,9 @@ void rule_check(rule_t *head, packet_t pkt)
 {
     rule_match_func match_functions[] = {
         match_protocol,
+        match_src_addr,
         match_src_port,
+        match_dst_addr,
         match_dst_port
     };
 
