@@ -5,7 +5,6 @@
 #include <json-c/json.h>
 #include <stdio.h>
 
-
 // --- Internal header imports ---
 #include "packet.h"
 #include "parser.h"

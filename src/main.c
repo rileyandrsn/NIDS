@@ -9,9 +9,9 @@
 // --- Internal header imports ---
 #include "cli.h"
 #include "parser.h"
+#include "rule.h"
 #include "rules.h"
 #include "sniffer.h"
-#include "rule.h"
 
 // --- Global Variables ---
 

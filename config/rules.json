@@ -1,14 +1,13 @@
 [
     {
-    "name":"ICMP Scan",
+    "name":"Xmas Scan",
     "action":"ALERT",
-    "msg":"ICMP SCAN DETECTED",
-    "protocol":"ICMP"
-    },
-    {
-    "name":"ARP Scan",
-    "action":"ALERT",
-    "msg":"ARP SCAN DETECTED",
-    "protocol":"ARP"
+    "msg":"XMAS SCAN DETECTED",
+    "protocol":"TCP",
+    "src_addr":"ANY",
+    "src_port":"ANY",
+    "dst_addr":"ANY",
+    "dst_port":"ANY",
+    "flags":41
     }
 ]
