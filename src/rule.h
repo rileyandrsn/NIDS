@@ -12,6 +12,7 @@ typedef struct rule_t {
     char src_port[6];
     char dst_addr[32];
     char dst_port[6];
+    uint8_t flags;
     struct rule_t *next;
 } rule_t;
 

@@ -124,6 +124,7 @@ rule_t *validate_rules(struct json_object *parsed_json)
     struct json_object *json_src_port;
     struct json_object *json_dst_addr;
     struct json_object *json_dst_port;
+    struct json_object *json_flags;
     int len = json_object_array_length(parsed_json);
 
     for (int i = 0; i < len; i++) {
@@ -185,6 +186,12 @@ rule_t *validate_rules(struct json_object *parsed_json)
         } else {
             strncpy(rule->dst_port, "ANY", PORT_SIZE - 1);
             rule->dst_port[PORT_SIZE - 1] = '\0';
+        }
+
+        if (json_object_object_get_ex(json_rule, "flags", &json_flags)) {
+            rule->flags = json_object_get_uint64(json_flags);
+        } else {
+            rule->flags = 0;
         }
 
         int result = validate_rule(*rule);
@@ -400,6 +407,30 @@ int match_dst_addr(rule_t *rule, packet_t pkt)
 }
 
 /*
+Function: int match_flags(rule_t *rule, packet_t pkt)
+Check if rule's TCP flags match with the TCP flags of the packet
+(NOTE): the input for rule->flags is like wireshark, ex: tcp.flags == 16 to match Flags: 0x10 (ACK)
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+0 - if a match is found
+1 - if no match is found
+*/
+int match_flags(rule_t *rule, packet_t pkt)
+{
+    if (rule->flags == 0)
+        return 0;
+    if ((rule->flags == pkt.trans_hdr.tcp_hdr.flags) && strcmp(rule->protocol, "TCP") == 0) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+/*
 Function: void trigger_action(rule_t *rule)
 Triggers selected action specified by action field in rules.jsons
 
@@ -434,7 +465,8 @@ void rule_check(rule_t *head, packet_t pkt)
         match_src_addr,
         match_src_port,
         match_dst_addr,
-        match_dst_port
+        match_dst_port,
+        match_flags
     };
 
     int num_matchers = sizeof(match_functions) / sizeof(match_functions[0]);

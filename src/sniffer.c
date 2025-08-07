@@ -106,7 +106,6 @@ void configure_pcap_handle(pcap_t *capture_handle)
     set_pcap_option(pcap_set_buffer_size(capture_handle, 1024 * 1024), "buffer size", capture_handle);
     // set_pcap_option(pcap_set_tstamp_precision(capture_handle, PCAP_TSTAMP_PRECISION_NANO), "timestamp precision", capture_handle);
     // set_pcap_option(pcap_set_tstamp_type(capture_handle, PCAP_TSTAMP_ADAPTER), "timestamp type", capture_handle);
-    // set_pcap_option(pcap_set_datalink(capture_handle, DLT_EN10MB), "datalink", capture_handle);
     set_pcap_option(pcap_set_rfmon(capture_handle, 0), "rfmon", capture_handle);
     set_pcap_option(pcap_set_immediate_mode(capture_handle, 0), "immediate mode", capture_handle);
 }

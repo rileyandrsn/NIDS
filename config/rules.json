@@ -1,12 +1,13 @@
 [
     {
-    "name":"TCP Scan",
+    "name":"Xmas Scan",
     "action":"ALERT",
-    "msg":"TCP SCAN DETECTED",
+    "msg":"XMAS SCAN DETECTED",
     "protocol":"TCP",
     "src_addr":"ANY",
     "src_port":"ANY",
     "dst_addr":"ANY",
-    "dst_port":"ANY"
+    "dst_port":"ANY",
+    "flags":41
     }
 ]
