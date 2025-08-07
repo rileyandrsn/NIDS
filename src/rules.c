@@ -13,6 +13,7 @@ const int NAME_SIZE = 128;
 const int ACTION_SIZE = 16;
 const int MSG_SIZE = 256;
 const int PROTOCOL_SIZE = 8;
+const int PORT_SIZE = 6;
 const char *ACTION_TYPES[] = { "ALERT", "LOG" };
 const int ACTION_TYPES_LEN = sizeof(ACTION_TYPES) / sizeof(ACTION_TYPES[0]);
 const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP", "ANY" };
@@ -117,6 +118,8 @@ rule_t *validate_rules(struct json_object *parsed_json)
     struct json_object *json_action;
     struct json_object *json_msg;
     struct json_object *json_protocol;
+    struct json_object *json_src_port;
+    struct json_object *json_dst_port;
     int len = json_object_array_length(parsed_json);
 
     for (int i = 0; i < len; i++) {
@@ -148,6 +151,22 @@ rule_t *validate_rules(struct json_object *parsed_json)
             rule->protocol[PROTOCOL_SIZE - 1] = '\0';
         }
 
+        if (json_object_object_get_ex(json_rule, "src_port", &json_src_port)) {
+            strncpy(rule->src_port, json_object_get_string(json_src_port), PORT_SIZE - 1);
+            rule->src_port[PORT_SIZE - 1] = '\0';
+        } else {
+            strncpy(rule->src_port, "ANY", PORT_SIZE - 1);
+            rule->src_port[PORT_SIZE - 1] = '\0';
+        }
+
+        if (json_object_object_get_ex(json_rule, "dst_port", &json_dst_port)) {
+            strncpy(rule->dst_port, json_object_get_string(json_dst_port), PORT_SIZE - 1);
+            rule->dst_port[PORT_SIZE - 1] = '\0';
+        } else {
+            strncpy(rule->dst_port, "ANY", PORT_SIZE - 1);
+            rule->dst_port[PORT_SIZE - 1] = '\0';
+        }
+
         int result = validate_rule(*rule);
         if (result != VALID_RULE) {
             return NULL;
@@ -165,6 +184,7 @@ rule_t *validate_rules(struct json_object *parsed_json)
         printf("action: %s \n", rule->action);
         printf("msg: %s \n", rule->msg);
         printf("protocol: %s \n}", rule->protocol);
+        printf("source port: %s \n}", rule->src_port);
     }
     return head;
 }
@@ -186,10 +206,84 @@ Returns: int
 */
 int match_protocol(rule_t *rule, packet_t pkt)
 {
-    if (strcmp(rule->protocol, pkt.proto) != 0) {
-        return 1;
-    } else {
+    if (strcmp(rule->protocol, pkt.proto) == 0 || strcmp(rule->protocol, "ANY") == 0) {
         return 0;
+    } else {
+        return 1;
+    }
+}
+
+/*
+Function: int match_src_port(rule_t *rule, packet_t pkt)
+Check if rule's source port field matches packet's source port
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+1 - if a match is found
+0 - if no match is found
+*/
+int match_src_port(rule_t *rule, packet_t pkt)
+{
+    if (strcmp(rule->src_port, "ANY") == 0) {
+        return 0;
+    } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
+        char str[6];
+        sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.src_port));
+        if (strcmp(rule->src_port, str) != 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
+        char str[6];
+        sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.src_port));
+        if (strcmp(rule->src_port, str) != 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        return 1;
+    }
+}
+
+/*
+Function: int match_dst_port(rule_t *rule, packet_t pkt)
+Check if rule's destination port field matches packet's destination port
+
+Parameters:
+*rule - list node storing a rule structure
+pkt - packet structure to be checked
+
+Returns: int
+1 - if a match is found
+0 - if no match is found
+*/
+int match_dst_port(rule_t *rule, packet_t pkt)
+{
+    if (strcmp(rule->dst_port, "ANY") == 0) {
+        return 0;
+    } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
+        char str[6];
+        sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.dst_port));
+        if (strcmp(rule->dst_port, str) != 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
+        char str[6];
+        sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.dst_port));
+        if (strcmp(rule->dst_port, str) != 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        return 1;
     }
 }
 
@@ -206,7 +300,7 @@ void trigger_action(rule_t *rule)
 {
     if (strcmp(rule->action, "ALERT") == 0) {
         printf("[%s] %s\n", rule->action, rule->msg);
-    } else if (strcmp(rule->action, "LOG") == 0){
+    } else if (strcmp(rule->action, "LOG") == 0) {
         printf("LOG");
     }
 }
@@ -223,23 +317,26 @@ Returns: void
 */
 void rule_check(rule_t *head, packet_t pkt)
 {
-    // List of rule-matching functions
     rule_match_func match_functions[] = {
-        match_protocol
+        match_protocol,
+        match_src_port,
+        match_dst_port
     };
 
-    int num_matches = 0; // Number of fields in a rule a packet matches
-    int num_matchers = sizeof(match_functions) / sizeof(match_functions[0]); // Number of matching functions
+    int num_matchers = sizeof(match_functions) / sizeof(match_functions[0]);
 
     for (rule_t *r = head; r != NULL; r = r->next) {
+        int matched_all = 1; // Assume the rule matches until a matcher fails
+
         for (int i = 0; i < num_matchers; i++) {
-            if (!match_functions[i](r, pkt)) {
-                num_matches++;
-                if (num_matchers == num_matches) {
-                    trigger_action(r);
-                }
-                break;
+            if (match_functions[i](r, pkt) != 0) {
+                matched_all = 0; // This rule field did not match
+                break; // Stop checking this rule
             }
+        }
+
+        if (matched_all) {
+            trigger_action(r); // All fields matched
         }
     }
 }

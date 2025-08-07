@@ -1,14 +1,10 @@
 [
     {
-    "name":"ICMP Scan",
+    "name":"TCP Scan",
     "action":"ALERT",
-    "msg":"ICMP SCAN DETECTED",
-    "protocol":"ICMP"
-    },
-    {
-    "name":"UDP Scan",
-    "action":"ALERT",
-    "msg":"UDP SCAN DETECTED",
-    "protocol":"UDP"
+    "msg":"TCP SCAN DETECTED",
+    "protocol":"TCP",
+    "src_port":"58823",
+    "dst_port":"443"
     }
 ]
