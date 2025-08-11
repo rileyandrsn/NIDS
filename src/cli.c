@@ -13,7 +13,7 @@
 // Hex values to bit mask flags
 const uint8_t FLAG_DEVICE = 0x01;
 const uint8_t FLAG_HEX = 0x02;
-const uint8_t FLAG_VERBOSE = 0x04;
+const uint8_t FLAG_FILE = 0x04;
 const uint8_t FLAG_WEB = 0x08;
 const int MAX_VALID_ARGS = 7;
 
@@ -27,6 +27,7 @@ typedef struct {
 typedef union {
     hex_config_t hex_t;
     char dev[16];
+    char *filepath;
 } type_config;
 
 typedef struct {
@@ -48,7 +49,7 @@ void print_usage()
     printf("List of flags:\n");
     printf("-i <device | Max size 16 chars> : Indicate which device to capture packets from\n");
     printf("-c <hex bytes | Max size 65,536 chars> : Enter custom packet input as bytes NOT separated by whitespace\n");
-    printf("-v : Enter verbose mode, displays all packet information; default is nonverbose mode\n");
+    printf("-f : Enter a custom pcap file by entering absolute file path\n");
     printf("-web : Opens localhost web page for visualization\n");
     printf("\nIf both -i and -c flag are set, device will be ignored and hex will be run\n");
 }
@@ -74,8 +75,8 @@ cli_config_t arg_handler(int argc, char *argv[])
             if ((i + 1) >= argc) { // Throw error if user does not specify name of device
                 fprintf(stderr, "DEVICE NOT GIVEN\n");
                 exit(EXIT_FAILURE);
-            } else if (config.flags & FLAG_HEX) { // Throw error if user tries setting both device and hex flags
-                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND HEX FLAGS SET\n");
+            } else if ((config.flags & FLAG_HEX) || (config.flags & FLAG_FILE)) { // Throw error if user tries setting both device and hex flags
+                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND FILE/HEX FLAGS SET\n");
                 exit(EXIT_FAILURE);
             }
             strncpy(config.type.dev, argv[i + 1], sizeof(config.type.dev) - 1);
@@ -89,8 +90,8 @@ cli_config_t arg_handler(int argc, char *argv[])
             if ((i + 1) >= argc) {
                 fprintf(stderr, "HEX NOT GIVEN\n");
                 exit(EXIT_FAILURE);
-            } else if (config.flags & FLAG_DEVICE) { // Throw error if user tries setting both device and hex flags
-                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND HEX FLAGS SET\n");
+            } else if ((config.flags & FLAG_DEVICE) || (config.flags & FLAG_FILE)) { // Throw error if user tries setting both device and hex flags
+                fprintf(stderr, "CANNOT HAVE BOTH HEX AND DEVICE/FILE FLAGS SET\n");
                 exit(EXIT_FAILURE);
             }
             config.type.hex_t.hex_len = strlen(argv[i + 1]);
@@ -106,9 +107,21 @@ cli_config_t arg_handler(int argc, char *argv[])
             printf("-FLAG_HEX SET\n");
             i++;
 
-        } else if (strcmp(argv[i], "-v") == 0) {
-            config.flags |= FLAG_VERBOSE;
-            printf("-FLAG_VERBOSE SET\n");
+        } else if (strcmp(argv[i], "-f") == 0) {
+            if ((i + 1) >= argc) {
+            fprintf(stderr, "FILE NOT GIVEN OR BAD FILE PATH\n");
+            exit(EXIT_FAILURE);
+            } else if ((config.flags & FLAG_DEVICE) || (config.flags & FLAG_HEX)) { // Throw error if user tries setting both device and hex flags
+            fprintf(stderr, "CANNOT HAVE DEVICE AND/OR HEX FLAGS SET\n");
+            exit(EXIT_FAILURE);
+            }
+            int len = strlen(argv[i + 1]);
+            config.type.filepath = (char *)malloc(len + 1);
+            strncpy(config.type.filepath, argv[i + 1], len);
+            config.type.filepath[len] = '\0'; 
+            config.flags |= FLAG_FILE;
+            printf("-FLAG_FILE SET\n");
+            i++;
         } else if (strcmp(argv[i], "-web") == 0) {
             config.flags |= FLAG_WEB;
             printf("-FLAG_WEB SET\n");

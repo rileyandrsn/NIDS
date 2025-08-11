@@ -202,6 +202,7 @@ Returns: void
 */
 void parse_udp_header(const u_char *packet, packet_t *pkt, int offset)
 {
+    strcpy(pkt->proto, "UDP");
     memcpy(&pkt->trans_hdr.udp_hdr.src_port, packet + offset, 2);
     memcpy(&pkt->trans_hdr.udp_hdr.dst_port, packet + offset + 2, 2);
     memcpy(&pkt->trans_hdr.udp_hdr.len, packet + offset + 4, 2);
@@ -224,7 +225,6 @@ void print_udp_header(packet_t *pkt)
     printf("Destination Port: %u\n", ntohs(pkt->trans_hdr.udp_hdr.dst_port));
     printf("Length: %u\n", ntohs(pkt->trans_hdr.udp_hdr.len));
     printf("Checksum: 0x%x\n", ntohs(pkt->trans_hdr.udp_hdr.checksum));
-    strcpy(pkt->proto, "UDP");
 }
 
 /*
@@ -240,6 +240,7 @@ Returns: void
 */
 void parse_icmp_header(const u_char *packet, packet_t *pkt, int offset)
 {
+    strcpy(pkt->proto, "ICMP");
     memcpy(&pkt->trans_hdr.icmp_hdr.type, packet + offset, 1);
     memcpy(&pkt->trans_hdr.icmp_hdr.code, packet + offset + 1, 1);
     memcpy(&pkt->trans_hdr.icmp_hdr.checksum, packet + offset + 2, 2);
@@ -260,7 +261,6 @@ void print_icmp_header(packet_t *pkt)
     printf("Type: %u\n", pkt->trans_hdr.icmp_hdr.type);
     printf("Code: %u\n", pkt->trans_hdr.icmp_hdr.code);
     printf("Checksum: 0x%x\n", ntohs(pkt->trans_hdr.icmp_hdr.checksum));
-    strcpy(pkt->proto, "ICMP");
 }
 
 /*
@@ -429,21 +429,21 @@ void packetParser(const u_char *packet, int packet_len, rule_t *rule)
     packet_t pkt; // Create instance of packet
     print_hex_dump(packet, packet_len);
     parse_ethernet_header(packet, &pkt);
-    print_ethernet_header(&pkt);
+    //print_ethernet_header(&pkt);
 
     // Switch statement to select respective protocol
     switch (ntohs(pkt.eth_hdr.eth_type)) {
     case 0x0800: // 0x0800 = IPv4
         parse_ipv4_header(packet, &pkt, 14);
-        print_ipv4_header(&pkt);
+        //print_ipv4_header(&pkt);
         break;
     case 0x86DD: // 0x86DD = IPv6
         parse_ipv6_header(packet, &pkt, 14);
-        print_ipv6_header(&pkt);
+        //print_ipv6_header(&pkt);
         break;
     case 0x0806: // 0x0806 = ARP
         parse_arp_header(packet, &pkt, 14);
-        print_arp_header(&pkt);
+        //print_arp_header(&pkt);
         break;
     default:
         printf("\nUKNOWN PROTOCOL\n");
@@ -455,17 +455,17 @@ void packetParser(const u_char *packet, int packet_len, rule_t *rule)
         uint8_t ihl = pkt.net_hdr.ipv4_hdr.version_ihl & 0x0f; // Bit mask to select last 4 bits
         uint8_t offset = ((ihl * 32) / 8) + 14; // Offset for start of TCP header given IPv4 internet header length (IHL)
         parse_tcp_header(packet, &pkt, offset);
-        print_tcp_header(&pkt);
+        //print_tcp_header(&pkt);
     } else if (pkt.net_hdr.ipv6_hdr.next_hdr == 6 && (ntohs(pkt.eth_hdr.eth_type)) == 0x86dd) {
         parse_tcp_header(packet, &pkt, 54);
-        print_tcp_header(&pkt);
+        //print_tcp_header(&pkt);
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17 && (ntohs(pkt.eth_hdr.eth_type)) == 0x0800) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17 && (ntohs(pkt.eth_hdr.eth_type)) == 0x86dd)) {
         int offset = (pkt.net_hdr.ipv4_hdr.protocol == 17) ? 34 : 54; // Select offset based on internet protocol version
         parse_udp_header(packet, &pkt, offset);
-        print_udp_header(&pkt);
+        //print_udp_header(&pkt);
     } else if (pkt.net_hdr.ipv6_hdr.next_hdr == 58) { // ICMPv6
         parse_icmp_header(packet, &pkt, 54);
-        print_icmp_header(&pkt);
+        //print_icmp_header(&pkt);
     }
     rule_check(rule, pkt);
 }

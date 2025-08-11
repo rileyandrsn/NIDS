@@ -18,6 +18,8 @@ enum {
     SUCCESSFULLY_SET = 0
 };
 
+int counter = 0;
+
 // --- Function declarations ---
 
 /*
@@ -68,6 +70,8 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_cha
         exit(EXIT_FAILURE);
     }
     rule_t *rule = (rule_t *)args; // Cast args back
+    counter++;
+    printf("#%d", counter);
     packetParser(packet, pkt_hdr->len, rule);
 }
 
@@ -110,6 +114,30 @@ void configure_pcap_handle(pcap_t *capture_handle)
     set_pcap_option(pcap_set_immediate_mode(capture_handle, 0), "immediate mode", capture_handle);
 }
 
+int pcap_iterator(pcap_t *handle, int count, pcap_handler callback, u_char *user){
+    int result = pcap_loop(handle, count, callback, user);
+    return result;
+}
+
+int load_pcap_file(char *filename, rule_t *rule){
+    printf(" File name: %s", filename);
+    FILE *fileptr = fopen(filename, "r");
+    if(!fileptr){
+        return -1;
+    }
+    pcap_t *file_handle;
+    file_handle = pcap_fopen_offline(fileptr, error_buffer);
+    if(file_handle == NULL){
+        return -1;
+    }
+    int result = pcap_iterator(file_handle, INFINITE_CNT, packet_handler,(u_char *)rule);
+    if(result != 0){
+        return -1;
+    }else{
+        return result;
+    }
+}
+
 /*
 Function: packetSniffer(char *device, struct json_object *parsed_json)
 Takes user specified device, validates it, creates a capture handle for device, captures packets
@@ -144,7 +172,7 @@ void packetSniffer(char *device, rule_t *rule)
         fprintf(stderr, "Error activating handle\n");
         exit(EXIT_FAILURE);
     }
-    result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
+    result = pcap_iterator(capture_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
     if (result != LOOP_BREAK) {
         fprintf(stderr, "Error processing packets\n");
         exit(EXIT_FAILURE);

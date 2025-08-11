@@ -14,7 +14,7 @@
 // --- Global Variables ---
 extern const uint8_t FLAG_DEVICE;
 extern const uint8_t FLAG_HEX;
-extern const uint8_t FLAG_VERBOSE;
+extern const uint8_t FLAG_FILE;
 extern const uint8_t FLAG_WEB;
 
 // --- Struct definitions ---
@@ -29,6 +29,7 @@ typedef struct {
 typedef union {
     hex_config_t hex_t;
     char dev[16];
+    char *filepath;
 } type_config;
 
 // Main CLI configuration structure

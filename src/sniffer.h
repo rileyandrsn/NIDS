@@ -15,7 +15,7 @@
 #define PACKET_BUFFER_SIZE 65535 // Maximum packet buffer size in bytes
 
 // --- Function declarations ---
-
+int load_pcap_file(char *filename, rule_t *rule);
 /*
 Function: packetSniffer(char *device, struct json_object *parsed_json)
 Takes user specified device, validates it, creates a capture handle for device, captures packets

@@ -23,7 +23,7 @@ const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP", "ANY" };
 const int PROTOCOL_TYPES_LEN = sizeof(PROTOCOL_TYPES) / sizeof(PROTOCOL_TYPES[0]);
 const int VALID_RULE = 0;
 const int INVALID_RULE = -1;
-const int FILE_BUFF_SIZE = 1024;
+const int FILE_BUFF_SIZE = 6000;
 const char *const LOG_FILE_PATH = "/Users/rileyanderson/Documents/GitHub/NIDS/docs/events.log";
 // --- Function declarations ---
 
@@ -192,7 +192,7 @@ rule_t *validate_rules(struct json_object *parsed_json)
         if (json_object_object_get_ex(json_rule, "flags", &json_flags)) {
             rule->flags = json_object_get_uint64(json_flags);
         } else {
-            rule->flags = 0;
+            rule->flags = 255;
         }
 
         int result = validate_rule(*rule);
@@ -422,7 +422,7 @@ Returns: int
 */
 int match_flags(rule_t *rule, packet_t pkt)
 {
-    if (rule->flags == 0)
+    if (rule->flags == 255)
         return 0;
     if ((rule->flags == pkt.trans_hdr.tcp_hdr.flags) && strcmp(rule->protocol, "TCP") == 0) {
         return 0;
@@ -433,6 +433,7 @@ int match_flags(rule_t *rule, packet_t pkt)
 
 int log_event(rule_t *rule)
 {
+    printf("Log\n");
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
     timestamp[strlen(timestamp) - 1] = '\0';
@@ -441,6 +442,7 @@ int log_event(rule_t *rule)
         return 0;
     fprintf(log_file, "%s |[%s] %s | %s %s %s -> %s %s {Flags: 0x%x/%d}\n",
         timestamp, rule->action, rule->msg, rule->protocol, rule->src_addr, rule->src_port, rule->dst_addr, rule->dst_port, rule->flags, rule->flags);
+    fclose(log_file);
     return 1;
 }
 

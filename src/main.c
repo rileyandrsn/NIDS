@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
         packetSniffer(config.type.dev, rule);
     } else if (config.flags & FLAG_HEX) {
         parse_hex_input(config.type.hex_t.hex, config.type.hex_t.hex_len, rule);
+    } else if(config.flags & FLAG_FILE){
+        printf("here");
+        load_pcap_file(config.type.filepath, rule);
     }
 
     return 0;
