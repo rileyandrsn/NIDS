@@ -1,3 +1,4 @@
+# NIDS
 
 [![GitHub issues](https://img.shields.io/github/issues/rileyandrsn/NIDS)](https://github.com/rileyandrsn/NIDS/issues)
 [![GitHub forks](https://img.shields.io/github/forks/rileyandrsn/NIDS)](https://github.com/rileyandrsn/NIDS/network)
