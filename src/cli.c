@@ -10,11 +10,15 @@
 
 // --- Global Variables ---
 
+const int ERR_NULL_ARG = -1;
+const int ERR_ARG_OVERFLOW = -1;
+const int ERR_TOO_FEW_ARGS = -1;
+const int RETURN_SUCCESS = 0;
+
 // Hex values to bit mask flags
 const uint8_t FLAG_DEVICE = 0x01;
 const uint8_t FLAG_HEX = 0x02;
-const uint8_t FLAG_VERBOSE = 0x04;
-const uint8_t FLAG_WEB = 0x08;
+const uint8_t FLAG_FILE = 0x04;
 const int MAX_VALID_ARGS = 7;
 
 // --- Struct definitions ---
@@ -27,6 +31,7 @@ typedef struct {
 typedef union {
     hex_config_t hex_t;
     char dev[16];
+    char *filepath;
 } type_config;
 
 typedef struct {
@@ -48,8 +53,7 @@ void print_usage()
     printf("List of flags:\n");
     printf("-i <device | Max size 16 chars> : Indicate which device to capture packets from\n");
     printf("-c <hex bytes | Max size 65,536 chars> : Enter custom packet input as bytes NOT separated by whitespace\n");
-    printf("-v : Enter verbose mode, displays all packet information; default is nonverbose mode\n");
-    printf("-web : Opens localhost web page for visualization\n");
+    printf("-f : Enter a custom pcap file by entering absolute file path\n");
     printf("\nIf both -i and -c flag are set, device will be ignored and hex will be run\n");
 }
 
@@ -67,15 +71,18 @@ config - structure of user's arguments
 cli_config_t arg_handler(int argc, char *argv[])
 {
     cli_config_t config;
+
     config.flags = 0;
+
     int i = 1;
+
     while (i < argc) {
         if (strcmp(argv[i], "-i") == 0) {
             if ((i + 1) >= argc) { // Throw error if user does not specify name of device
                 fprintf(stderr, "DEVICE NOT GIVEN\n");
                 exit(EXIT_FAILURE);
-            } else if (config.flags & FLAG_HEX) { // Throw error if user tries setting both device and hex flags
-                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND HEX FLAGS SET\n");
+            } else if ((config.flags & FLAG_HEX) || (config.flags & FLAG_FILE)) { // Throw error if user tries setting both device and hex flags
+                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND FILE/HEX FLAGS SET\n");
                 exit(EXIT_FAILURE);
             }
             strncpy(config.type.dev, argv[i + 1], sizeof(config.type.dev) - 1);
@@ -84,17 +91,16 @@ cli_config_t arg_handler(int argc, char *argv[])
             printf("Dev: %s\n", config.type.dev);
             printf("-FLAG_DEVICE SET\n");
             i++;
-
         } else if (strcmp(argv[i], "-c") == 0) {
             if ((i + 1) >= argc) {
                 fprintf(stderr, "HEX NOT GIVEN\n");
                 exit(EXIT_FAILURE);
-            } else if (config.flags & FLAG_DEVICE) { // Throw error if user tries setting both device and hex flags
-                fprintf(stderr, "CANNOT HAVE BOTH DEVICE AND HEX FLAGS SET\n");
+            } else if ((config.flags & FLAG_DEVICE) || (config.flags & FLAG_FILE)) { // Throw error if user tries setting both device and hex flags
+                fprintf(stderr, "CANNOT HAVE BOTH HEX AND DEVICE/FILE FLAGS SET\n");
                 exit(EXIT_FAILURE);
             }
             config.type.hex_t.hex_len = strlen(argv[i + 1]);
-            if (config.type.hex_t.hex_len > PACKET_BUFFER_SIZE) { // Throw error if hex input is larger than max size of a packet
+            if (config.type.hex_t.hex_len > PACKET_BUFFER_SIZE * 2) { // Throw error if hex input is larger than max size of a packet
                 fprintf(stderr, "TOO MANY BYTES");
                 exit(EXIT_FAILURE);
             }
@@ -105,20 +111,28 @@ cli_config_t arg_handler(int argc, char *argv[])
             printf("HEX: %s\n", config.type.hex_t.hex);
             printf("-FLAG_HEX SET\n");
             i++;
-
-        } else if (strcmp(argv[i], "-v") == 0) {
-            config.flags |= FLAG_VERBOSE;
-            printf("-FLAG_VERBOSE SET\n");
-        } else if (strcmp(argv[i], "-web") == 0) {
-            config.flags |= FLAG_WEB;
-            printf("-FLAG_WEB SET\n");
+        } else if (strcmp(argv[i], "-f") == 0) {
+            if ((i + 1) >= argc) {
+                fprintf(stderr, "FILE NOT GIVEN OR BAD FILE PATH\n");
+                exit(EXIT_FAILURE);
+            } else if ((config.flags & FLAG_DEVICE) || (config.flags & FLAG_HEX)) { // Throw error if user tries setting both device and hex flags
+                fprintf(stderr, "CANNOT HAVE DEVICE AND/OR HEX FLAGS SET\n");
+                exit(EXIT_FAILURE);
+            }
+            int len = strlen(argv[i + 1]);
+            config.type.filepath = (char *)malloc(len + 1);
+            strncpy(config.type.filepath, argv[i + 1], len);
+            config.type.filepath[len] = '\0';
+            config.flags |= FLAG_FILE;
+            printf("-FLAG_FILE SET\n");
+            i++;
         } else if (strcmp(argv[i], "-help") == 0) {
             print_usage();
             exit(EXIT_SUCCESS);
         } else {
             fprintf(stderr, "UNKNOWN COMMAND FOUND: %s\nUse ./pinids -help for list of commands\n", argv[i]);
+            exit(EXIT_FAILURE);
         }
-
         i++;
     }
 
@@ -134,20 +148,22 @@ Parameters:
 argc - number of arguments
 
 Returns: int
--1 - number of arguments is invalid
-0 - valid number of arguments
+ERR_NULL_ARG - no arguments provided
+ERR_ARG_OVERFLOW - too many arguments provided
+ERR_TOO_FEW_ARGS - too few arguments provided
+RETURN_SUCCESS - valid number of arguments
 */
 int arg_validator(int argc)
 {
-    if (!argc) { // Return -1 if no arguments found
-        return -1;
+    if (!argc) {
+        return ERR_NULL_ARG;
     } else if (argc > MAX_VALID_ARGS) {
         fprintf(stderr, "TOO MANY ARGUMENTS");
-        return -1;
+        return ERR_ARG_OVERFLOW;
     } else if (argc < 2) {
         print_usage();
-        return -1;
+        return ERR_TOO_FEW_ARGS;
     } else {
-        return 0;
+        return RETURN_SUCCESS;
     }
 }

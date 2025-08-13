@@ -1,13 +1,13 @@
 [
     {
-    "name":"Xmas Scan",
-    "action":"ALERT",
-    "msg":"XMAS SCAN DETECTED",
-    "protocol":"TCP",
-    "src_addr":"ANY",
-    "src_port":"ANY",
-    "dst_addr":"ANY",
-    "dst_port":"ANY",
-    "flags":41
+        "name": "Rule",
+        "action": "LOG",
+        "msg": "Rule",
+        "protocol": "ANY",
+        "src_addr": "ANY",
+        "src_port": "ANY",
+        "dst_addr": "ANY",
+        "dst_port": "ANY",
+        "flags": 255
     }
 ]

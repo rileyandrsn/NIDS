@@ -8,15 +8,16 @@
 #include "rule.h"
 
 // --- Global variables ---
-char error_buffer[PCAP_ERRBUF_SIZE];
-enum {
-    VALID_DEV = 0,
-    INVALID_DEV = -1,
-    INFINITE_CNT = -1,
-    ACTIVE_HANDLE = 0,
-    LOOP_BREAK = 0,
-    SUCCESSFULLY_SET = 0
-};
+char ERR_BUFFER[PCAP_ERRBUF_SIZE];
+
+const int VALID_DEV = 0;
+const int INVALID_DEV = -1;
+const int INFINITE_CNT = -1;
+const int ACTIVE_HANDLE = 0;
+const int LOOP_BREAK = 0;
+const int SUCCESSFULLY_SET = 0;
+
+int packet_counter = 0;
 
 // --- Function declarations ---
 
@@ -33,9 +34,9 @@ INVALID_DEV if device user specified is not a valid capture device
 int validate_dev(char *device)
 {
     pcap_if_t *dev_ptr;
-    int result = pcap_findalldevs(&dev_ptr, error_buffer); // Returns 0 on success, PCAP_ERROR on failure
+    int result = pcap_findalldevs(&dev_ptr, ERR_BUFFER); // Returns 0 on success, PCAP_ERROR on failure
     if (result == PCAP_ERROR) {
-        fprintf(stderr, "Error getting all devices: %s\n", error_buffer);
+        fprintf(stderr, "Error getting all devices: %s\n", ERR_BUFFER);
         exit(EXIT_FAILURE);
     }
     pcap_if_t *temp = dev_ptr;
@@ -68,6 +69,8 @@ void packet_handler(u_char *args, const struct pcap_pkthdr *pkt_hdr, const u_cha
         exit(EXIT_FAILURE);
     }
     rule_t *rule = (rule_t *)args; // Cast args back
+    packet_counter++;
+    printf("#%d", packet_counter);
     packetParser(packet, pkt_hdr->len, rule);
 }
 
@@ -104,14 +107,66 @@ void configure_pcap_handle(pcap_t *capture_handle)
     set_pcap_option(pcap_set_promisc(capture_handle, 1), "promiscuous mode", capture_handle);
     set_pcap_option(pcap_set_timeout(capture_handle, 1000), "timeout", capture_handle);
     set_pcap_option(pcap_set_buffer_size(capture_handle, 1024 * 1024), "buffer size", capture_handle);
-    // set_pcap_option(pcap_set_tstamp_precision(capture_handle, PCAP_TSTAMP_PRECISION_NANO), "timestamp precision", capture_handle);
-    // set_pcap_option(pcap_set_tstamp_type(capture_handle, PCAP_TSTAMP_ADAPTER), "timestamp type", capture_handle);
     set_pcap_option(pcap_set_rfmon(capture_handle, 0), "rfmon", capture_handle);
     set_pcap_option(pcap_set_immediate_mode(capture_handle, 0), "immediate mode", capture_handle);
 }
 
 /*
-Function: packetSniffer(char *device, struct json_object *parsed_json)
+Function: pcap_iterator(pcap_t *handle, int count, pcap_handler callback, u_char *user)
+Takes parameters to run pcap_loop, interface to allow both load_pcap_file and packetSniffer to use
+
+Parameters:
+*capture_handle - the handle to be used to capture packets
+count - number of packets to be iterated over; -1 for infinite/until exhausted-of-packets
+callback - function to handle functionality with each packet
+*user - (u_char *) casted rule to be passed in as a custom argument
+
+Returns: int
+result - return value of pcap_loop; returns 0 if count is exhausted or file has no more available packets
+*/
+int pcap_iterator(pcap_t *handle, int count, pcap_handler callback, u_char *rule)
+{
+    int result = pcap_loop(handle, count, callback, rule);
+    return result;
+}
+
+/*
+Function: load_pcap_file(char *filepath, rule_t *rule)
+Opens specified file designated by user and prepares a capture handle to be iterated over
+
+Parameters:
+*filepath - absolute file path designated by user
+*rule - head node of linked list of rules
+Returns: int
+-1 - any error occurs
+result - return value of pcap_iterator
+*/
+int load_pcap_file(char *filepath, rule_t *rule)
+{
+    printf(" File name: %s", filepath);
+    FILE *fileptr = fopen(filepath, "r");
+    if (!fileptr) {
+        fclose(fileptr);
+        return -1;
+    }
+    pcap_t *file_handle;
+    file_handle = pcap_fopen_offline(fileptr, ERR_BUFFER);
+
+    if (file_handle == NULL) {
+        return -1;
+    }
+    printf("here");
+    int result = pcap_iterator(file_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
+    pcap_close(file_handle);
+    if (result != 0) {
+        return -1;
+    } else {
+        return result;
+    }
+}
+
+/*
+Function: load_device(char *device, struct json_object *parsed_json)
 Takes user specified device, validates it, creates a capture handle for device, captures packets
 
 Parameters:
@@ -119,7 +174,7 @@ Parameters:
 *rule - pointer to head of linked list storing rules
 Returns: void
 */
-void packetSniffer(char *device, rule_t *rule)
+void load_device(char *device, rule_t *rule)
 {
     if (!device || !rule) {
         fprintf(stderr, "Invalid arguments to packetSniffer\n");
@@ -130,13 +185,12 @@ void packetSniffer(char *device, rule_t *rule)
         fprintf(stderr, "Error finding device: %s\n", device);
         exit(EXIT_FAILURE);
     }
-    pcap_t *capture_handle = pcap_create(device, error_buffer);
+    pcap_t *capture_handle = pcap_create(device, ERR_BUFFER);
     if (capture_handle == NULL) {
-        fprintf(stderr, "Error creating capture handle with device: %s\nError buffer: %s\n", device, error_buffer);
+        fprintf(stderr, "Error creating capture handle with device: %s\nError buffer: %s\n", device, ERR_BUFFER);
         exit(EXIT_FAILURE);
     }
 
-    // todo: set options using cli args
     configure_pcap_handle(capture_handle);
 
     result = pcap_activate(capture_handle);
@@ -144,7 +198,7 @@ void packetSniffer(char *device, rule_t *rule)
         fprintf(stderr, "Error activating handle\n");
         exit(EXIT_FAILURE);
     }
-    result = pcap_loop(capture_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
+    result = pcap_iterator(capture_handle, INFINITE_CNT, packet_handler, (u_char *)rule);
     if (result != LOOP_BREAK) {
         fprintf(stderr, "Error processing packets\n");
         exit(EXIT_FAILURE);
