@@ -25,6 +25,6 @@ Parameters:
 *rule - pointer to head of linked list storing rules
 Returns: void
 */
-void packetSniffer(char *device, rule_t *rule);
+void load_device(char *device, rule_t *rule);
 
 #endif // SNIFFER_H

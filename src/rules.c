@@ -23,8 +23,10 @@ const char *PROTOCOL_TYPES[] = { "TCP", "UDP", "ICMP", "ARP", "ANY" };
 const int PROTOCOL_TYPES_LEN = sizeof(PROTOCOL_TYPES) / sizeof(PROTOCOL_TYPES[0]);
 const int VALID_RULE = 0;
 const int INVALID_RULE = -1;
-const int FILE_BUFF_SIZE = 6000;
 const char *const LOG_FILE_PATH = "/Users/rileyanderson/Documents/GitHub/NIDS/docs/events.log";
+
+const int RULE_MATCH_SUCCESS = 0;
+const int RULE_NO_MATCH = 1;
 // --- Function declarations ---
 
 /*
@@ -37,8 +39,7 @@ NULL - Error opening rules.json file
 */
 struct json_object *load_rules()
 {
-    char buffer[FILE_BUFF_SIZE]; // buffer to hold json file content
-    struct json_object *parsed_json; // json_object struct to hold json file content
+    struct json_object *parsed_json;
     FILE *file_ptr;
 
     file_ptr = fopen("/Users/rileyanderson/Documents/GitHub/NIDS/config/rules.json", "r");
@@ -48,10 +49,34 @@ struct json_object *load_rules()
         return NULL;
     }
 
-    fread(buffer, FILE_BUFF_SIZE, 1, file_ptr);
+    fseek(file_ptr, 0, SEEK_END);
+    long FILE_SIZE = ftell(file_ptr);
+    rewind(file_ptr);
+
+    if (FILE_SIZE < 0) {
+        fclose(file_ptr);
+        fprintf(stderr, "Error getting file size\n");
+        return NULL;
+    }
+
+    char *buffer = malloc(FILE_SIZE + 1);
+    if (!buffer) {
+        fclose(file_ptr);
+        fprintf(stderr, "Error allocating memory to buffer\n");
+        return NULL;
+    }
+    size_t read_size = fread(buffer, 1, FILE_SIZE, file_ptr);
     fclose(file_ptr);
 
+    if (read_size != (size_t)FILE_SIZE) {
+        fprintf(stderr, "Error reading file\n");
+        free(buffer);
+        return NULL;
+    }
+
+    buffer[FILE_SIZE] = '\0';
     parsed_json = json_tokener_parse(buffer);
+    free(buffer);
     return parsed_json;
 }
 
@@ -133,6 +158,8 @@ rule_t *validate_rules(struct json_object *parsed_json)
         if (rule == NULL) {
             return NULL;
         }
+        rule->next = NULL;
+
         json_rule = json_object_array_get_idx(parsed_json, i);
         printf("\nRule: %s\n", json_object_get_string(json_rule));
 
@@ -233,15 +260,15 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS -  match is found
+RULE_NO_MATCH - no match is found
 */
 int match_protocol(rule_t *rule, packet_t pkt)
 {
     if (strcmp(rule->protocol, pkt.proto) == 0 || strcmp(rule->protocol, "ANY") == 0) {
-        return 0;
+        return RULE_MATCH_SUCCESS;
     } else {
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -254,31 +281,31 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS - match is found
+RULE_NO_MATCH - no match is found
 */
 int match_src_port(rule_t *rule, packet_t pkt)
 {
     if (strcmp(rule->src_port, "ANY") == 0) {
-        return 0;
+        return RULE_MATCH_SUCCESS;
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.src_port));
         if (strcmp(rule->src_port, str) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.src_port));
         if (strcmp(rule->src_port, str) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
     } else {
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -291,31 +318,31 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS - match is found
+RULE_NO_MATCH - if no match is found
 */
 int match_dst_port(rule_t *rule, packet_t pkt)
 {
     if (strcmp(rule->dst_port, "ANY") == 0) {
-        return 0;
+        return RULE_MATCH_SUCCESS;
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 6) || (pkt.net_hdr.ipv6_hdr.next_hdr == 6)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.tcp_hdr.dst_port));
         if (strcmp(rule->dst_port, str) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
     } else if ((pkt.net_hdr.ipv4_hdr.protocol == 17) || (pkt.net_hdr.ipv6_hdr.next_hdr == 17)) {
         char str[6];
         sprintf(str, "%d", ntohs(pkt.trans_hdr.udp_hdr.dst_port));
         if (strcmp(rule->dst_port, str) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
     } else {
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -328,22 +355,22 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS - match is found
+RULE_NO_MATCH - no match is found
 */
 int match_src_addr(rule_t *rule, packet_t pkt)
 {
     if (strcmp(rule->src_addr, "ANY") == 0)
-        return 0;
+        return RULE_MATCH_SUCCESS;
 
     switch (ntohs(pkt.eth_hdr.eth_type)) {
     case 0x0800: { // IPv4
         struct in_addr src_ipv4;
         src_ipv4.s_addr = pkt.net_hdr.ipv4_hdr.src_ip;
         if (strcmp(rule->src_addr, inet_ntoa(src_ipv4)) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
         break;
     }
@@ -351,15 +378,15 @@ int match_src_addr(rule_t *rule, packet_t pkt)
         char src_ipv6[INET6_ADDRSTRLEN];
         inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.src_addr, src_ipv6, INET6_ADDRSTRLEN);
         if (strcmp(rule->src_addr, src_ipv6) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
         break;
     }
     default:
         printf("\nUNKNOWN PROTOCOL\n");
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -372,22 +399,22 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS - match is found
+RULE_NO_MATCH - no match is found
 */
 int match_dst_addr(rule_t *rule, packet_t pkt)
 {
     if (strcmp(rule->dst_addr, "ANY") == 0)
-        return 0;
+        return RULE_MATCH_SUCCESS;
 
     switch (ntohs(pkt.eth_hdr.eth_type)) {
     case 0x0800: { // IPv4
         struct in_addr dst_ipv4;
         dst_ipv4.s_addr = pkt.net_hdr.ipv4_hdr.dst_ip;
         if (strcmp(rule->dst_addr, inet_ntoa(dst_ipv4)) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
         break;
     }
@@ -395,15 +422,15 @@ int match_dst_addr(rule_t *rule, packet_t pkt)
         char dst_ipv6[INET6_ADDRSTRLEN];
         inet_ntop(AF_INET6, &pkt.net_hdr.ipv6_hdr.dst_addr, dst_ipv6, INET6_ADDRSTRLEN);
         if (strcmp(rule->dst_addr, dst_ipv6) == 0) {
-            return 0;
+            return RULE_MATCH_SUCCESS;
         } else {
-            return 1;
+            return RULE_NO_MATCH;
         }
         break;
     }
     default:
         printf("\nUNKNOWN PROTOCOL\n");
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -417,17 +444,17 @@ Parameters:
 pkt - packet structure to be checked
 
 Returns: int
-0 - if a match is found
-1 - if no match is found
+RULE_MATCH_SUCCESS - match is found
+RULE_NO_MATCH - no match is found
 */
 int match_flags(rule_t *rule, packet_t pkt)
 {
     if (rule->flags == 255)
-        return 0;
+        return RULE_MATCH_SUCCESS;
     if ((rule->flags == pkt.trans_hdr.tcp_hdr.flags) && strcmp(rule->protocol, "TCP") == 0) {
-        return 0;
+        return RULE_MATCH_SUCCESS;
     } else {
-        return 1;
+        return RULE_NO_MATCH;
     }
 }
 
@@ -494,17 +521,17 @@ void rule_check(rule_t *head, packet_t pkt)
     int num_matchers = sizeof(match_functions) / sizeof(match_functions[0]);
 
     for (rule_t *r = head; r != NULL; r = r->next) {
-        int matched_all = 1; // Assume the rule matches until a matcher fails
+        int matched_all = 1; // assume the rule matches until a matcher fails
 
         for (int i = 0; i < num_matchers; i++) {
             if (match_functions[i](r, pkt) != 0) {
-                matched_all = 0; // This rule field did not match
-                break; // Stop checking this rule
+                matched_all = 0; // rule field did not match
+                break; // stop checking rule
             }
         }
 
         if (matched_all) {
-            trigger_action(r); // All fields matched
+            trigger_action(r);
         }
     }
 }

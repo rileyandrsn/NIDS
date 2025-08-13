@@ -15,7 +15,6 @@
 extern const uint8_t FLAG_DEVICE;
 extern const uint8_t FLAG_HEX;
 extern const uint8_t FLAG_FILE;
-extern const uint8_t FLAG_WEB;
 
 // --- Struct definitions ---
 
@@ -46,7 +45,7 @@ Prints all possible commands and how to use them
 
 Returns: void
 */
-void printUsage();
+void print_usage();
 
 /*
 Function: cli_config_t arg_handler(int argc, char *argv[])
@@ -69,8 +68,10 @@ Parameters:
 argc - number of arguments
 
 Returns: int
--1 - number of arguments is invalid
-0 - valid number of arguments
+ERR_NULL_ARG - no arguments provided
+ERR_ARG_OVERFLOW - too many arguments provided
+ERR_TOO_FEW_ARGS - too few arguments provided
+RETURN_SUCCESS - valid number of arguments
 */
 int arg_validator(int argc);
 

@@ -4,7 +4,7 @@
 // --- Struct definitions ---
 
 typedef struct rule_t {
-    char name[128]; // or use [NAME_SIZE] after the extern fix
+    char name[128];
     char action[16];
     char msg[256];
     char protocol[8];
