@@ -61,6 +61,12 @@
 "C_Cpp_Runner.msvcSecureNoWarnings": false,
 "C_Cpp.errorSquiggles": "disabled",
 "files.associations": {
-    "sniffer.h": "c"
+    "sniffer.h": "c",
+    "cstdlib": "c",
+    "locale": "c",
+    "new": "c",
+    "deque": "c",
+    "unordered_map": "c",
+    "vector": "c"
 }
 }

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 // --- Internal header imports ---
 #include "cli.h"
@@ -17,10 +18,32 @@
 
 const int RESULT_ERR = -1;
 
+void intro_text()
+{
+    printf("Welcome to\n\n\n");
+    printf("#####      #####      #####      ##########       ############\n");
+    usleep(100000);
+    printf("#######    #####      #####      ###########      ###         \n");
+    usleep(100000);
+    printf("#########  #####      #####      ####     ###     ##          \n");
+    usleep(100000);
+    printf("#####  ### #####      #####      ####      ###    #########   \n");
+    usleep(100000);
+    printf("#####   ########      #####      ####      ###       #########\n");
+    usleep(100000);
+    printf("#####    #######      #####      ####     ###               ##\n");
+    usleep(100000);
+    printf("#####     ######      #####      ###########               ###\n");
+    usleep(100000);
+    printf("#####      #####      #####      ##########       ############\n");
+    usleep(150000);
+}
+
 // --- Program entry point ---
 
 int main(int argc, char *argv[])
 {
+    intro_text();
     int result = arg_validator(argc);
     if (result == RESULT_ERR) {
         exit(EXIT_FAILURE);
@@ -48,7 +71,7 @@ int main(int argc, char *argv[])
         load_pcap_file(config.type.filepath, rule);
         free(config.type.filepath);
     } else {
-        fprintf(stderr, "No valid flags set. Use -help for usage information.\n");
+        fprintf(stderr, "No valid flags set. Use --help for usage information.\n");
     }
 
     json_object_put(json);

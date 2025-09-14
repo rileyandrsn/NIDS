@@ -4,7 +4,7 @@
         "action": "LOG",
         "msg": "Rule",
         "protocol": "ANY",
-        "src_addr": "ANY",
+        "src_addr": "192.14.14.621",
         "src_port": "ANY",
         "dst_addr": "ANY",
         "dst_port": "ANY",

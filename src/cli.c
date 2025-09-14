@@ -49,7 +49,7 @@ Returns: void
 */
 void print_usage()
 { // Print all available commands and usages
-    printf("\nIntended use: ./pinids FLAGS start\n");
+    printf("\nIntended use: ./nids FLAGS start\n");
     printf("List of flags:\n");
     printf("-i <device | Max size 16 chars> : Indicate which device to capture packets from\n");
     printf("-c <hex bytes | Max size 65,536 chars> : Enter custom packet input as bytes NOT separated by whitespace\n");
@@ -126,11 +126,11 @@ cli_config_t arg_handler(int argc, char *argv[])
             config.flags |= FLAG_FILE;
             printf("-FLAG_FILE SET\n");
             i++;
-        } else if (strcmp(argv[i], "-help") == 0) {
+        } else if ((strcmp(argv[i], "--help") == 0) || strcmp(argv[i], "-h") == 0) {
             print_usage();
             exit(EXIT_SUCCESS);
         } else {
-            fprintf(stderr, "UNKNOWN COMMAND FOUND: %s\nUse ./pinids -help for list of commands\n", argv[i]);
+            fprintf(stderr, "UNKNOWN COMMAND FOUND: %s\nUse ./nids --help or ./nids -h for list of commands\n", argv[i]);
             exit(EXIT_FAILURE);
         }
         i++;
@@ -161,7 +161,6 @@ int arg_validator(int argc)
         fprintf(stderr, "TOO MANY ARGUMENTS");
         return ERR_ARG_OVERFLOW;
     } else if (argc < 2) {
-        print_usage();
         return ERR_TOO_FEW_ARGS;
     } else {
         return RETURN_SUCCESS;
