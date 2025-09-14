@@ -12,7 +12,7 @@ The program has 4 commands
 ./nids -i <NIC>
 ./nids -c <HEX>
 ./nids -f <FILEPATH>
-./nids -help
+./nids -h / --help
 ```
 # -i Flag
 The -i flag is used to indicate you would like to run the program using a network interface card (NIC) to capture live packets, common examples include
